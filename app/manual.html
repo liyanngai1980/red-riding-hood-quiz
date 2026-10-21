@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小紅帽大冒險 · 學科推理闖關 — 遊戲說明書</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    background:#191715;
+    color:#F4ECD8;
+    font-family:"PingFang TC","Microsoft JhengHei","Noto Sans TC",-apple-system,sans-serif;
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:860px; margin:0 auto; padding:0 22px; }
+
+  /* ============ 封面 ============ */
+  .cover {
+    min-height:92vh;
+    background:linear-gradient(180deg,#2F3D29 0%,#2A2520 78%);
+    display:flex; flex-direction:column; justify-content:center; align-items:center;
+    text-align:center; position:relative; overflow:hidden; padding:60px 22px;
+  }
+  .cover .deco { position:absolute; font-size:44px; opacity:0.9; filter:drop-shadow(0 4px 8px rgba(0,0,0,.4)); }
+  .cover .d1 { top:12%; left:10%; transform:rotate(-12deg); }
+  .cover .d2 { top:18%; right:12%; transform:rotate(10deg); }
+  .cover .d3 { bottom:22%; left:14%; transform:rotate(8deg); }
+  .cover .d4 { bottom:16%; right:10%; transform:rotate(-8deg); }
+  .cover .kicker {
+    font-size:14px; letter-spacing:6px; color:#C9B98A; margin-bottom:18px;
+    text-transform:uppercase;
+  }
+  .cover h1 {
+    font-size:clamp(40px,9vw,74px); font-weight:900; line-height:1.15;
+    color:#F4ECD8;
+    text-shadow:0 3px 0 rgba(0,0,0,.25);
+  }
+  .cover h1 em { font-style:normal; color:#E8B93C; }
+  .cover .sub {
+    margin-top:16px; font-size:clamp(15px,3vw,19px); color:#C9B98A; letter-spacing:2px;
+  }
+  .cover .chips { margin-top:34px; display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+  .chip {
+    border:1.5px solid #6a7a52; border-radius:999px; padding:7px 16px;
+    font-size:14px; color:#E7DDBE; background:rgba(255,255,255,.04);
+  }
+  .cover .play {
+    margin-top:42px; display:inline-block; background:#E8B93C; color:#2A2520;
+    font-weight:800; font-size:17px; padding:14px 38px; border-radius:999px;
+    text-decoration:none; box-shadow:0 6px 0 #a8842a;
+  }
+  .cover .play:active { transform:translateY(4px); box-shadow:0 2px 0 #a8842a; }
+
+  /* ============ 撕紙分隔 ============ */
+  .tear { display:block; width:100%; height:34px; margin:-1px 0; }
+
+  /* ============ 章節 ============ */
+  section.page { padding:64px 0 72px; }
+  .olive { background:#2F3D29; }
+  .dark  { background:#2A2520; }
+  .deep  { background:#191715; }
+  h2 {
+    font-size:clamp(26px,5.4vw,38px); font-weight:900; color:#E8B93C;
+    margin-bottom:8px; letter-spacing:1px;
+  }
+  .lead { color:#C9B98A; font-size:15.5px; margin-bottom:34px; }
+  h3 { font-size:19px; font-weight:800; color:#F4ECD8; margin:30px 0 10px; }
+  h3::before { content:"◆ "; color:#E8B93C; font-size:14px; }
+  p, li { font-size:15.5px; color:#E7DDBE; }
+  .rulebox {
+    border-left:4px solid #E8B93C; background:rgba(232,185,60,.08);
+    padding:14px 18px; border-radius:0 12px 12px 0; margin:18px 0;
+  }
+
+  /* ============ 關卡表 ============ */
+  table { width:100%; border-collapse:collapse; margin-top:8px; font-size:15px; }
+  th, td { padding:11px 10px; text-align:left; border-bottom:1px solid rgba(244,236,216,.14); }
+  th { color:#E8B93C; font-weight:800; font-size:14px; letter-spacing:1px; }
+  td:first-child { white-space:nowrap; font-weight:700; }
+
+  /* ============ 圖文並排 ============ */
+  .duo { display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:14px; }
+  @media (max-width:640px){ .duo { grid-template-columns:1fr; } }
+  .card {
+    background:rgba(255,255,255,.045); border:1px solid rgba(244,236,216,.12);
+    border-radius:16px; padding:20px 22px;
+  }
+  .card .big { font-size:34px; margin-bottom:8px; }
+  .card b.t { display:block; font-size:16.5px; color:#F4ECD8; margin-bottom:6px; }
+  .card span { font-size:14.5px; color:#C9B98A; }
+
+  /* ============ 步驟 ============ */
+  ol.steps { counter-reset:s; list-style:none; margin-top:10px; }
+  ol.steps li {
+    counter-increment:s; position:relative; padding:0 0 20px 52px;
+  }
+  ol.steps li::before {
+    content:counter(s); position:absolute; left:0; top:2px;
+    width:34px; height:34px; border-radius:50%;
+    background:#E8B93C; color:#2A2520; font-weight:900; font-size:16px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  ol.steps li b { color:#F4ECD8; }
+
+  /* ============ 推廣海報（一頁可列印） ============ */
+  .poster-wrap { background:#384732; padding:64px 0 80px; }
+  .poster {
+    max-width:720px; margin:0 auto; background:#F4ECD8; color:#2A2520;
+    border-radius:10px; overflow:hidden; box-shadow:0 24px 70px rgba(0,0,0,.5);
+  }
+  .poster .p-hero {
+    background:linear-gradient(160deg,#2F3D29,#1f2a1a); color:#F4ECD8;
+    padding:44px 36px 38px; text-align:center; position:relative;
+  }
+  .poster .p-hero .badge {
+    display:inline-block; background:#E8B93C; color:#2A2520; font-weight:900;
+    font-size:13px; letter-spacing:3px; padding:5px 16px; border-radius:999px; margin-bottom:16px;
+  }
+  .poster .p-hero h2 { color:#F4ECD8; font-size:clamp(30px,6vw,44px); margin:0 0 6px; }
+  .poster .p-hero h2 em { font-style:normal; color:#E8B93C; }
+  .poster .p-hero p { color:#C9B98A; font-size:15px; }
+  .poster .p-body { padding:34px 36px 40px; }
+  .poster .p-body h3 { color:#2A2520; margin:24px 0 8px; font-size:17.5px; }
+  .poster .p-body h3::before { content:"✦ "; color:#B8860B; }
+  .poster .p-body p, .poster .p-body li { color:#4a4438; font-size:14.5px; }
+  .p-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:12px; }
+  @media (max-width:560px){ .p-grid { grid-template-columns:1fr; } }
+  .p-cell {
+    border:1.5px dashed #C9B98A; border-radius:12px; padding:12px 14px;
+    font-size:14px; color:#4a4438; background:#FBF6E8;
+  }
+  .p-cell b { color:#2A2520; display:block; margin-bottom:2px; font-size:14.5px; }
+  .p-verse {
+    margin-top:26px; text-align:center; font-size:15px; color:#6a5a2a;
+    border-top:1px solid #E0D4B0; padding-top:20px;
+  }
+  .p-cta {
+    margin-top:20px; text-align:center; background:#2F3D29; color:#F4ECD8;
+    border-radius:12px; padding:18px 20px;
+  }
+  .p-cta b { color:#E8B93C; font-size:16.5px; display:block; margin-bottom:4px; }
+  .p-cta span { font-size:13.5px; color:#C9B98A; }
+  .printbtn {
+    display:block; margin:26px auto 0; background:#2F3D29; color:#F4ECD8;
+    border:none; font-family:inherit; font-size:15px; font-weight:700;
+    padding:12px 30px; border-radius:999px; cursor:pointer;
+  }
+
+  footer {
+    background:#191715; padding:44px 0 54px; text-align:center;
+    color:#8a8268; font-size:13.5px;
+  }
+  footer b { color:#C9B98A; }
+
+  @media print {
+    body { background:#fff; }
+    .no-print { display:none !important; }
+    .poster { box-shadow:none; max-width:100%; }
+    .poster-wrap { padding:0; background:#fff; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ 封面 ═══════════ -->
+<header class="cover">
+  <span class="deco d1">🐺</span>
+  <span class="deco d2">🐉</span>
+  <span class="deco d3">✝️</span>
+  <span class="deco d4">🚩</span>
+  <div class="kicker">遊戲說明書 · GAME MANUAL</div>
+  <h1>小紅帽大冒險<br><em>學科推理闖關</em></h1>
+  <div class="sub">跑酷 × 答題 × 五關冒險 — 邊玩邊學的兒童闖關遊戲</div>
+  <div class="chips">
+    <span class="chip">🐺 數學</span>
+    <span class="chip">🐻 國語</span>
+    <span class="chip">🦅 音樂</span>
+    <span class="chip">🦁 英文</span>
+    <span class="chip">🐉 聖經</span>
+    <span class="chip">✝️ 隱藏結局</span>
+  </div>
+  <a class="play" href="index.html">▶ 開始遊戲</a>
+</header>
+
+<svg class="tear" viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M0,0 L3,4 L7,2 L12,6 L18,3 L24,7 L30,2 L36,5 L42,3 L48,7 L55,2 L61,6 L67,3 L73,7 L79,2 L85,5 L91,3 L96,6 L100,2 L100,0 Z" fill="#2F3D29"/></svg>
+
+<!-- ═══════════ 故事與目標 ═══════════ -->
+<section class="page olive">
+  <div class="wrap">
+    <h2>一、故事與目標</h2>
+    <div class="lead">小紅帽的旅程，由你來守護</div>
+    <p>小紅帽要穿越森林、山坡、沙漠、河畔，最後抵達城堡。每個地方都住著一種「學科魔物」——牠們不咬人，只出題目！答對題目就能擊敗魔物、取得鑰匙；集滿 <b style="color:#E8B93C">5 把鑰匙</b>，才能拉下每關終點的旗子過關。</p>
+    <div class="rulebox">
+      🎯 <b>目標</b>：通過全部 5 關。傳說中，若能在城堡高空找到隱藏的✝️十字架寶藏並持有它通關，將迎來「新天新地」的隱藏結局！
+    </div>
+    <h3>基本操作</h3>
+    <div class="duo">
+      <div class="card"><div class="big">📱</div><b class="t">手機 / 平板</b><span>左半螢幕拖曳虛擬搖桿＝移動；右半螢幕點擊 JUMP＝跳躍。</span></div>
+      <div class="card"><div class="big">⌨️</div><b class="t">電腦</b><span>方向鍵或 A／D＝移動；空白鍵＝跳躍。</span></div>
+      <div class="card"><div class="big">⭐</div><b class="t">六段跳</b><span>最多可連跳 6 次！在空中反覆按跳躍即可一階一階向上，JUMP 按鈕旁的數字是剩餘跳躍次數，落地自動補滿。</span></div>
+      <div class="card"><div class="big">👟</div><b class="t">踩敵人</b><span>路上的一般小怪可以從上方踩扁得分；但學科魔物不能踩——碰到就要答題！</span></div>
+    </div>
+  </div>
+</section>
+
+<svg class="tear" viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M0,0 L4,5 L9,2 L14,7 L20,3 L26,6 L32,2 L38,5 L44,3 L50,7 L57,2 L63,6 L69,3 L75,6 L81,2 L87,5 L93,3 L100,6 L100,0 Z" fill="#2A2520"/></svg>
+
+<!-- ═══════════ 五關與魔物 ═══════════ -->
+<section class="page dark">
+  <div class="wrap">
+    <h2>二、五關卡 × 五種學科魔物</h2>
+    <div class="lead">魔物會主動追擊玩家，碰到就開始答題</div>
+    <table>
+      <tr><th>關卡</th><th>場景</th><th>魔物</th><th>科目</th><th>特色</th></tr>
+      <tr><td>第 1 關</td><td>🌲 森林</td><td>🐺 野狼</td><td>數學</td><td>四則運算、規律、應用題</td></tr>
+      <tr><td>第 2 關</td><td>⛰️ 山坡</td><td>🐻 巨熊</td><td>國語</td><td>字詞、成語、造句常識</td></tr>
+      <tr><td>第 3 關</td><td>🏜️ 沙漠</td><td>🦅 老鷹</td><td>音樂</td><td>空中飛行追擊，注意閃避</td></tr>
+      <tr><td>第 4 關</td><td>🏞️ 河畔</td><td>🦁 獅子</td><td>英文</td><td>單字、文法、基礎會話</td></tr>
+      <tr><td>第 5 關</td><td>🏰 城堡</td><td>🐉 惡龍</td><td>聖經</td><td>聖經人物與故事問答</td></tr>
+    </table>
+    <h3>答題規則</h3>
+    <ol class="steps">
+      <li><b>答對</b>：魔物被擊敗 ✅，獲得 1 把鑰匙 🔑＋150 分，題目附解析可順便學習。</li>
+      <li><b>答錯</b>：扣 1 格心 💔（共 3 格），錯誤選項會鎖定並顯示提示，可繼續作答直到答對。</li>
+      <li><b>先離開</b>：不想答可以先走，魔物會留在原地，之後再回來挑戰。</li>
+      <li><b>心歸零</b>：遊戲結束；被小怪撞或跌落重生不會重置已收集的鑰匙。</li>
+    </ol>
+    <div class="rulebox">
+      🎚️ <b>難度選擇</b>：開始前可選起點關卡與難度——🌱 簡單每關 5 隻魔物、⚔️ 普通 7 隻、🔥 困難 9 隻。魔物越多，集鑰匙的容錯空間越大！
+    </div>
+  </div>
+</section>
+
+<svg class="tear" viewBox="0 0 100 10" preserveAspectRatio="none"><path d="M0,0 L3,4 L8,7 L13,2 L19,6 L25,3 L31,7 L37,2 L43,5 L49,3 L54,6 L60,2 L66,7 L72,3 L78,6 L84,2 L90,5 L96,3 L100,7 L100,0 Z" fill="#191715"/></svg>
+
+<!-- ═══════════ 寶藏與結局 ═══════════ -->
+<section class="page deep">
+  <div class="wrap">
+    <h2>三、隱藏寶藏 ✝️ 與新天新地結局</h2>
+    <div class="lead">給細心又勇敢的小偵探的最高榮譽</div>
+    <div class="duo">
+      <div class="card">
+        <div class="big">✝️</div><b class="t">雲端十字架</b>
+        <span>第五關城堡的高空雲端藏著金色十字架，一般跳躍搆不到——必須使出六段跳！碰到十字架會觸發「啟示錄考驗」，從 10 條啟示錄題目中隨機抽題，答對即可取得寶藏（＋500 分）。</span>
+      </div>
+      <div class="card">
+        <div class="big">🌟</div><b class="t">新天新地結局</b>
+        <span>第五關同時持有 5 把鑰匙＋十字架拉旗過關，將觸發特別動畫：金色耶路撒冷城伴隨光芒與號角音效從天降下，配上啟示錄 21:3-4 的經文——這是給過關小勇士的禮物。</span>
+      </div>
+    </div>
+    <h3>過關結算</h3>
+    <p>每關拉旗後會顯示本關答題成績單（出題數、答對、答錯、正確率）；五關全破後還有各科總結算表，讓老師與家長一眼看出孩子哪一科最強、哪一科要加油。</p>
+    <h3>給家長與老師的小提醒</h3>
+    <p>題目程度約為國小 3–5 年級。建議陪孩子一起討論答錯的題目——遊戲內每題都附解析，答錯不恐怖，正是最好的教學時刻。每次遊玩約 10–15 分鐘，適合主日學暖場或課後獎勵。</p>
+  </div>
+</section>
+
+<!-- ═══════════ 推廣海報 ═══════════ -->
+<section class="poster-wrap" id="poster">
+  <div class="wrap">
+    <div class="poster">
+      <div class="p-hero">
+        <div class="badge">KID SUNDAY SERVICE 特別企劃</div>
+        <h2>小紅帽大冒險<br><em>學科推理闖關</em></h2>
+        <p>跑酷 × 答題 × 聖經故事 — 給孩子一個邊玩邊學的主日上午！</p>
+      </div>
+      <div class="p-body">
+        <h3>這是什麼？</h3>
+        <p>一款專為兒童設計的闖關遊戲：孩子化身小紅帽，穿越五大場景，用數學、國語、音樂、英文與聖經知識擊敗魔物、收集鑰匙、拉下勝利旗幟。全部免費，手機平板電腦打開網頁就能玩。</p>
+        <h3>為什麼適合主日學？</h3>
+        <div class="p-grid">
+          <div class="p-cell"><b>🐉 聖經關卡</b>第五關城堡的惡龍出的是聖經問答，複習故事超自然。</div>
+          <div class="p-cell"><b>✝️ 啟示錄寶藏</b>隱藏十字架＋新天新地結局，帶出啟示錄 21 章信息。</div>
+          <div class="p-cell"><b>📊 成績結算</b>每關自動統計答題正確率，老師立即掌握學習狀況。</div>
+          <div class="p-cell"><b>🎚️ 三種難度</b>可依年齡選擇魔物數量，3–5 年級都玩得盡興。</div>
+        </div>
+        <h3>建議流程（15 分鐘）</h3>
+        <p>① 暖場 3 分鐘：示範操作與六段跳 → ② 闖關 8 分鐘：孩子輪流挑戰 → ③ 分享 4 分鐘：看結算表，聊聊答錯的聖經題，最後一起讀啟示錄 21:3-4。</p>
+        <div class="p-verse">「看哪，神的帳幕在人間…不再有死亡，也不再有悲哀、哭號、疼痛。」<br>—— 啟示錄 21:3-4</div>
+        <div class="p-cta">
+          <b>本主日，一起出發吧！</b>
+          <span>Kid Sunday Service · 兒童主日學 · 歡迎 3–5 年級小朋友參加</span>
+        </div>
+      </div>
+    </div>
+    <button class="printbtn no-print" onclick="window.print()">🖨️ 列印推廣海報</button>
+  </div>
+</section>
+
+<footer>
+  <b>小紅帽大冒險 · 學科推理闖關</b><br>
+  遊戲說明書與 Kid Sunday Service 推廣頁 · 為兒童主日學而設計
+</footer>
+
+</body>
+</html>
