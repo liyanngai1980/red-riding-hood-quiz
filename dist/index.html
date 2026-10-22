@@ -284,7 +284,7 @@
 
 <!-- ====================== 宣傳影片播放層 ====================== -->
 <div id="videoOverlay">
-  <video id="promoVideo" src="promo.mp4" playsinline preload="auto"></video>
+  <video id="promoVideo" src="promo.mp4" playsinline preload="none"></video>
   <button id="skipVideo">⏭ 略過影片，開始遊戲</button>
 </div>
 
@@ -403,11 +403,18 @@ function loadImg(key, src) {
 loadImg('hydra_body',      'assets/hydra_body.png');        // 🐉 九頭巨龍：高解像身軀
 loadImg('hydra_head',      'assets/hydra_head.png');        // 閉口龍頭
 loadImg('hydra_head_fire', 'assets/hydra_head_fire.png');   // 張口噴火龍頭
-STAGES.forEach(s => {
+// ⚡ 優先立即加載第 1 關森林背景與小紅帽套裝，秒開無延遲
+function loadStageBgs(idx) {
+  const s = STAGES[idx || 0];
+  if (!s) return;
   loadImg(s.bg + '_far',  'assets/' + s.bg + '_far.png');
   loadImg(s.bg + '_mid',  'assets/' + s.bg + '_mid.png');
   loadImg(s.bg + '_near', 'assets/' + s.bg + '_near.png');
-});
+}
+loadStageBgs(0);
+setTimeout(() => {
+  STAGES.forEach((s, idx) => { if (idx !== 0) loadStageBgs(idx); });
+}, 800);
 
 /* ====================== 骨架木偶部件（四肢/翅膀/頭部） ====================== */
 // 內建完整骨架定義（保證本地 file:// 與無網絡環境下 100% 立即啟動高解像木偶）
@@ -656,6 +663,7 @@ const REVELATION_QS = [
 
 /* ====================== 關卡建構 ====================== */
 function buildLevel() {
+  loadStageBgs(stage);
   if (keyItems.length) { keyCount += keyItems.length; }   // 重生/換關前，飛行中的鑰匙先入帳
   keyItems = [];
   platforms = [];
@@ -4038,6 +4046,16 @@ function drawPlayer() {
   // 繪製 100% 完全對應套裝卡片的高解析度角色！
   if (cImg) {
     ctx.drawImage(cImg, -dw / 2, -dh, dw, dh);
+  } else {
+    // 🛡️ 載入中保護：繪製套裝配色的過渡剪影，保證角色在任何網絡延遲下絕不隱形！
+    const colMap = { red: '#c22727', tang: '#d4a017', princess: '#f7a8c8', cowboy: '#8a5a2a' };
+    const mainCol = colMap[cost] || '#c22727';
+    ctx.fillStyle = mainCol;
+    roundRect(-12, -dh * 0.58, 24, dh * 0.55, 6); ctx.fill();
+    ctx.fillStyle = '#f7c9a3';
+    ctx.beginPath(); ctx.arc(0, -dh * 0.74, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = mainCol;
+    ctx.beginPath(); ctx.arc(0, -dh * 0.80, 8.5, Math.PI, 0); ctx.fill();
   }
 
   // 😭 戰敗哭泣：緊閉雙眼＋眼淚不斷滴落
@@ -4719,7 +4737,14 @@ function drawMiniPlayer(x, yB, dh, dir, ph) {
 
   const cost = (typeof player !== 'undefined' && player && player.costume) ? player.costume : (typeof wardrobe !== 'undefined' && wardrobe.eq ? wardrobe.eq : 'red');
   const cImg = IMGS['cost_' + cost + '_sprite'] || IMGS['cost_' + cost] || IMGS.player;
-  if (!cImg) { mctx.restore(); return; }
+  if (!cImg) {
+    const colMap = { red: '#c22727', tang: '#d4a017', princess: '#f7a8c8', cowboy: '#8a5a2a' };
+    mctx.scale(dir, 1);
+    mctx.fillStyle = colMap[cost] || '#c22727';
+    mctx.fillRect(-10, -dh * 0.55, 20, dh * 0.55);
+    mctx.restore();
+    return;
+  }
 
   const dw = dh * (cImg.width / cImg.height);
   mctx.scale(dir, 1);
