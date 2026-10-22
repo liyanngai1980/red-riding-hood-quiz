@@ -1,0 +1,13 @@
+{
+  "name": "red-riding-hood-quiz",
+  "version": "1.0.0",
+  "description": "Little Red Riding Hood Adventure HTML5 Game",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve dist",
+    "build": "mkdir -p dist && cp -r app/* dist/"
+  },
+  "keywords": ["game", "adventure", "html5", "canvas", "quiz"],
+  "author": "liyanngai1980",
+  "license": "UNLICENSED"
+}

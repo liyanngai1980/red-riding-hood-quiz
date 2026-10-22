@@ -1,0 +1,7 @@
+{
+  "name": "red-riding-hood-quiz",
+  "compatibility_date": "2024-10-01",
+  "assets": {
+    "directory": "./dist"
+  }
+}
