@@ -646,9 +646,8 @@ function drawCostumeFlairs(cost, dw, dh, vx, vy, air) {
       ctx.beginPath(); ctx.arc(spx, spy, 1.2 + Math.random() * 1.6, 0, Math.PI * 2); ctx.fill();
     }
   } else if (cost === 'cowboy') {
-    // 🤠 西部牛仔：飛揚紅領巾與斗篷皮革流蘇
-    drawRibbonFlow(-dw * 0.10, -dh * 0.68, dh * 0.36, vx, vy, air, '#c22727', '#8e1414', 3.5, 7);   // 紅領巾飄揚
-    drawRibbonFlow(-dw * 0.16, -dh * 0.46, dh * 0.42, vx, vy, air, '#8a5a2a', '#5e3a14', 5.0, 5);   // 披肩流蘇
+    // 🤠 西部牛仔：飛揚紅領巾（僅保留頸部紅領巾自然飄動，乾淨俐落）
+    drawRibbonFlow(-dw * 0.10, -dh * 0.66, dh * 0.38, vx, vy, air, '#c22727', '#8e1414', 4.0, 7.5);
   }
 }
 const TH = () => STAGES[stage - 1];
@@ -4197,45 +4196,260 @@ function drawPlayer() {
 
   ctx.restore();
 
-  /* 🥅 手持捕捉網：平時垂放身側，攻擊時向前猛揮＋弧光 */
+  /* ⚔️/🥅 依套裝切換專屬武器與優雅動感姿態：
+     小紅帽＝捕網 | 唐裝＝仙氣金絲扇子索 | 公主＝璀璨皇家大鳥籠 | 牛仔＝空中盤旋套牛繩索 */
   {
     const sw = player.atkT > 0 ? (0.26 - player.atkT) / 0.26 : 0;   // 揮擊進度 0→1
-    const ang = player.atkT > 0
-      ? -2.0 + Math.min(sw * 1.4, 1) * 3.1                          // 由後上方掃向前下方
-      : 0.55 + Math.sin(time * 2.2) * 0.05;                         // 平時輕輕搖晃
+    const isAtk = player.atkT > 0;
     const hx = dw * 0.16, hy = -dh * 0.46;                        // 手部位置
-    ctx.save();
-    ctx.translate(hx, hy);
-    ctx.rotate(ang);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#8a5a2a'; ctx.lineWidth = 3;                 // 木柄
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(25, 0); ctx.stroke();
-    ctx.strokeStyle = '#c9d6e2'; ctx.lineWidth = 2.5;               // 網圈
-    ctx.beginPath(); ctx.ellipse(35, 0, 11, 8.5, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1;  // 網格
-    for (let i = -2; i <= 2; i++) {
-      ctx.beginPath(); ctx.moveTo(35 + i * 4.2, -6.6); ctx.lineTo(35 + i * 4.2, 6.6); ctx.stroke();
-    }
-    ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(44, 0); ctx.stroke();
-    // 🥅 網中抓到的小妖（藍色伙伴，迷你顯示）
-    if (player.holding.length) {
+
+    if (cost === 'cowboy') {
+      // ========================================================
+      // 🤠 西部牛仔：捉牛的繩（空中一直在盤旋旋轉繩套，攻擊時猛力甩出套索）
+      // ========================================================
+      const spin = time * 13;
       ctx.save();
-      ctx.rotate(-ang);        // 保持小妖直立
-      ctx.translate(35, -4);
-      drawCritter(player.holding[player.holding.length - 1], 0, 6, 15, { anim: time * 3, dir: 1, blue: true });
-      ctx.restore();
-    }
-    ctx.restore();
-    if (player.atkT > 0) {                                          // 揮擊弧光
-      ctx.save();
-      ctx.globalAlpha = 0.75 * (1 - sw * 0.7);
-      ctx.strokeStyle = '#aef1ff';
-      ctx.lineWidth = 5;
+      ctx.translate(hx, hy);
       ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.arc(hx + 4, hy + 2, 42, -1.2, -1.2 + sw * 2.7);
-      ctx.stroke();
+
+      // 手持韁繩手柄
+      ctx.strokeStyle = '#6b4423'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(-2, 2); ctx.lineTo(10, -2); ctx.stroke();
+
+      if (!isAtk) {
+        // 平時：繩索一直在頭頂斜上方呼嘯盤旋飛轉
+        const lx = 6 + Math.sin(time * 3) * 2;
+        const ly = -24;
+        // 連接手與繩套的牽引繩
+        ctx.strokeStyle = '#c49a6c'; ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.moveTo(8, -2); ctx.quadraticCurveTo(lx - 4, ly + 14, lx, ly); ctx.stroke();
+
+        // 旋轉中的立體麻繩套
+        ctx.save();
+        ctx.translate(lx, ly);
+        ctx.rotate(0.35 + Math.sin(spin) * 0.15);
+        ctx.strokeStyle = '#d4a373'; ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 18 + Math.cos(spin) * 2.5, 7.5 + Math.sin(spin) * 1.5, spin, 0, Math.PI * 2);
+        ctx.stroke();
+        // 繩結
+        ctx.fillStyle = '#6b4423'; ctx.beginPath();
+        ctx.arc(14 * Math.cos(spin), 6 * Math.sin(spin), 2.2, 0, Math.PI * 2); ctx.fill();
+
+        // 困在旋轉繩套中的小妖
+        if (player.holding.length) {
+          ctx.save();
+          drawCritter(player.holding[player.holding.length - 1], 0, 4, 14, { anim: time * 3, dir: 1, blue: true });
+          ctx.restore();
+        }
+        ctx.restore();
+      } else {
+        // 攻擊時：牛仔甩出長套索猛烈撲向前方！
+        const throwDist = 18 + sw * 48;
+        const throwY = -10 + sw * 8;
+        // 繃緊前衝的套繩
+        ctx.strokeStyle = '#d4a373'; ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(8, -2);
+        ctx.quadraticCurveTo(throwDist * 0.4, -20 + sw * 6, throwDist, throwY);
+        ctx.stroke();
+        // 前方張開的大套圈
+        ctx.save();
+        ctx.translate(throwDist, throwY);
+        ctx.rotate(-0.3 + sw * 0.8);
+        ctx.lineWidth = 2.6; ctx.strokeStyle = '#ffd54a';
+        ctx.beginPath(); ctx.ellipse(0, 0, 14 + sw * 7, 10 + sw * 4, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+
+        // 西部狂沙裂空金色弧光
+        ctx.save();
+        ctx.globalAlpha = 0.85 * (1 - sw * 0.7);
+        ctx.strokeStyle = '#ffd54a'; ctx.lineWidth = 4.5;
+        ctx.beginPath();
+        ctx.arc(10, -5, 45, -0.9, -0.9 + sw * 2.5);
+        ctx.stroke();
+        ctx.strokeStyle = '#e59866'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(10, -5, 49, -0.7, -0.7 + sw * 2.3); ctx.stroke();
+        ctx.restore();
+      }
       ctx.restore();
+
+    } else if (cost === 'tang') {
+      // ========================================================
+      // 🏮 唐裝：仙氣摺扇與金絲扇子索（優雅揮扇，綢帶索道飛舞）
+      // ========================================================
+      const ang = isAtk ? -1.8 + sw * 3.4 : (0.45 + Math.sin(time * 2.6) * 0.08);
+      ctx.save();
+      ctx.translate(hx, hy);
+      ctx.rotate(ang);
+
+      // 手持精緻宮廷摺扇
+      const fanLen = isAtk ? (20 + sw * 8) : 18;
+      // 扇骨（黑檀木與金柄）
+      ctx.strokeStyle = '#4a2c11'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(fanLen * 0.7, -fanLen * 0.35); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(fanLen * 0.7, fanLen * 0.35); ctx.stroke();
+      // 扇面（金絲紅絹扇面）
+      ctx.fillStyle = isAtk ? '#ffd54a' : '#d4a017';
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, fanLen, -0.65, 0.65);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#c22727'; ctx.lineWidth = 1.2; ctx.stroke();
+
+      // 扇面紅梅金紋
+      ctx.fillStyle = '#c22727';
+      ctx.beginPath(); ctx.arc(fanLen * 0.65, 0, 2, 0, Math.PI * 2); ctx.fill();
+
+      // 扇柄懸掛的紅絲穗與扇子索（金絲長綢索）
+      ctx.strokeStyle = '#c22727'; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(0, 0);
+      const cordWob = Math.sin(time * 8) * 3;
+      ctx.quadraticCurveTo(-6, 8, -10 - (isAtk ? sw * 22 : 0), 16 + cordWob);
+      ctx.stroke();
+      ctx.fillStyle = '#ffd54a'; // 翡翠金珠
+      ctx.beginPath(); ctx.arc(-6, 8, 1.8, 0, Math.PI * 2); ctx.fill();
+
+      // 扇上收服的小妖
+      if (player.holding.length) {
+        ctx.save();
+        ctx.rotate(-ang);
+        ctx.translate(fanLen * 0.6, -10);
+        drawCritter(player.holding[player.holding.length - 1], 0, 4, 13, { anim: time * 3, dir: 1, blue: true });
+        ctx.restore();
+      }
+
+      ctx.restore();
+
+      // 攻擊時：展開華麗的扇風氣刃與金色祥雲流光！
+      if (isAtk) {
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.globalAlpha = 0.85 * (1 - sw * 0.75);
+        // 祥雲扇氣弧光
+        ctx.strokeStyle = '#ffd54a'; ctx.lineWidth = 4.5;
+        ctx.beginPath(); ctx.arc(8, -2, 44, -1.1, -1.1 + sw * 2.8); ctx.stroke();
+        ctx.strokeStyle = '#ff7b7b'; ctx.lineWidth = 2.2;
+        ctx.beginPath(); ctx.arc(8, -2, 48, -0.9, -0.9 + sw * 2.6); ctx.stroke();
+        // 飛舞紅梅花瓣
+        for (let i = 0; i < 3; i++) {
+          const pt = (sw * 40 + i * 14);
+          ctx.fillStyle = '#e83e5a';
+          ctx.beginPath(); ctx.ellipse(20 + pt * 0.8, -15 + i * 12, 3, 1.8, sw * 4 + i, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+      }
+
+    } else if (cost === 'princess') {
+      // ========================================================
+      // 👑 公主裝：放出大鳥籠（璀璨皇家黃金鳥籠與星光權杖）
+      // ========================================================
+      ctx.save();
+      ctx.translate(hx, hy);
+
+      if (!isAtk) {
+        // 平時：手持星光珍珠小鳥籠權杖
+        ctx.strokeStyle = '#ffd54a'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(16, -6); ctx.stroke();
+        // 杖頂小鳥籠
+        ctx.save();
+        ctx.translate(16, -6);
+        ctx.strokeStyle = '#f5c542'; ctx.lineWidth = 1.4;
+        ctx.strokeRect(-5, -12, 10, 11); // 籠身
+        ctx.beginPath(); ctx.arc(0, -12, 5, Math.PI, 0); ctx.stroke(); // 圓拱頂
+        ctx.fillStyle = '#5ac8fa'; ctx.beginPath(); ctx.arc(0, -17, 1.8, 0, Math.PI * 2); ctx.fill(); // 藍寶石珍珠頂
+        // 籠中小妖
+        if (player.holding.length) {
+          drawCritter(player.holding[player.holding.length - 1], 0, -4, 11, { anim: time * 3, dir: 1, blue: true });
+        }
+        ctx.restore();
+      } else {
+        // 攻擊時：公主優雅揮杖，釋放出華麗巨大的黃金大鳥籠向前方降臨！
+        const cageX = 22 + sw * 38;
+        const cageY = -12 + (1 - sw) * 8;
+        const cageW = 26 + sw * 8;
+        const cageH = 34 + sw * 10;
+        
+        ctx.save();
+        ctx.translate(cageX, cageY);
+        // 鳥籠金柱與雕花
+        ctx.strokeStyle = '#ffd54a'; ctx.lineWidth = 2;
+        // 底座
+        ctx.fillStyle = 'rgba(255,213,74,0.3)';
+        ctx.strokeRect(-cageW / 2, 0, cageW, 4);
+        ctx.fillRect(-cageW / 2, 0, cageW, 4);
+        // 籠柱
+        for (let i = -2; i <= 2; i++) {
+          const bx = i * (cageW / 4.8);
+          ctx.beginPath(); ctx.moveTo(bx, 0); ctx.lineTo(bx, -cageH * 0.65); ctx.stroke();
+        }
+        // 圓拱穹頂
+        ctx.beginPath(); ctx.ellipse(0, -cageH * 0.65, cageW / 2, cageH * 0.35, 0, Math.PI, 0, true); ctx.stroke();
+        // 頂部金環與皇家紅寶石
+        ctx.strokeStyle = '#f5c542'; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.arc(0, -cageH - 4, 4.5, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#e83e5a';
+        ctx.beginPath(); ctx.arc(0, -cageH * 0.65, 3.2, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+
+        // 公主魔法星辰與粉紅玫瑰光環
+        ctx.save();
+        ctx.globalAlpha = 0.85 * (1 - sw * 0.7);
+        ctx.strokeStyle = '#f7a8c8'; ctx.lineWidth = 4.5;
+        ctx.beginPath(); ctx.arc(8, -6, 46, -1.0, -1.0 + sw * 2.6); ctx.stroke();
+        ctx.strokeStyle = '#ffd54a'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(8, -6, 50, -0.8, -0.8 + sw * 2.4); ctx.stroke();
+        // 四射星光
+        for (let i = 0; i < 4; i++) {
+          const sx = cageX + Math.cos(sw * 6 + i * 1.5) * 16;
+          const sy = cageY + Math.sin(sw * 6 + i * 1.5) * 16;
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath(); ctx.arc(sx, sy, 1.8, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+      }
+      ctx.restore();
+
+    } else {
+      // ========================================================
+      // 🧺 小紅帽：經典木柄捕蟲網
+      // ========================================================
+      const ang = isAtk
+        ? -2.0 + Math.min(sw * 1.4, 1) * 3.1
+        : 0.55 + Math.sin(time * 2.2) * 0.05;
+      ctx.save();
+      ctx.translate(hx, hy);
+      ctx.rotate(ang);
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#8a5a2a'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(25, 0); ctx.stroke();
+      ctx.strokeStyle = '#c9d6e2'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.ellipse(35, 0, 11, 8.5, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath(); ctx.moveTo(35 + i * 4.2, -6.6); ctx.lineTo(35 + i * 4.2, 6.6); ctx.stroke();
+      }
+      ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(44, 0); ctx.stroke();
+      if (player.holding.length) {
+        ctx.save();
+        ctx.rotate(-ang);
+        ctx.translate(35, -4);
+        drawCritter(player.holding[player.holding.length - 1], 0, 6, 15, { anim: time * 3, dir: 1, blue: true });
+        ctx.restore();
+      }
+      ctx.restore();
+      if (isAtk) {
+        ctx.save();
+        ctx.globalAlpha = 0.75 * (1 - sw * 0.7);
+        ctx.strokeStyle = '#aef1ff';
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(hx + 4, hy + 2, 42, -1.2, -1.2 + sw * 2.7);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
   }
 
