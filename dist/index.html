@@ -395,6 +395,7 @@ function loadImg(key, src) {
   im.src = src;
 }
 ['player','slime','wolf','bear','eagle','lion','dragon'].forEach(n => loadImg(n, 'assets/' + n + '.png'));
+['cost_red','cost_tang','cost_princess','cost_cowboy'].forEach(n => loadImg(n, 'assets/' + n + '.png'));   // 👗 完整高解像套裝大圖
 ['piranha','bee','bat','frog','snake'].forEach(n => loadImg('crit_' + n, 'assets/crit_' + n + '.png'));  // 🎨 高解像小怪
 loadImg('hydra_body',      'assets/hydra_body.png');        // 🐉 九頭巨龍：高解像身軀
 loadImg('hydra_head',      'assets/hydra_head.png');        // 閉口龍頭
@@ -406,20 +407,65 @@ STAGES.forEach(s => {
 });
 
 /* ====================== 骨架木偶部件（四肢/翅膀/頭部） ====================== */
-const PARTS = {};
+// 內建完整骨架定義（保證本地 file:// 與無網絡環境下 100% 立即啟動高解像木偶）
+const PARTS = {
+  "player": { "w": 525, "h": 999, "parts": [
+    { "key": "player_head", "x": 73, "y": 0, "w": 347, "h": 359, "px": 262.5, "py": 344.655, "layer": "front", "swing": "head" },
+    { "key": "player_legL", "x": 105, "y": 734, "w": 157, "h": 265, "px": 183.75, "py": 759.24, "layer": "behind", "swing": "legA" },
+    { "key": "player_legR", "x": 283, "y": 734, "w": 179, "h": 265, "px": 357.0, "py": 759.24, "layer": "front", "swing": "legB" }
+  ]},
+  "wolf": { "w": 1007, "h": 924, "parts": [
+    { "key": "wolf_tail", "x": 0, "y": 388, "w": 171, "h": 443, "px": 140.98, "py": 462.0, "layer": "behind", "swing": "tail" },
+    { "key": "wolf_legH1", "x": 70, "y": 508, "w": 171, "h": 416, "px": 151.05, "py": 535.92, "layer": "behind", "swing": "legA" },
+    { "key": "wolf_legF1", "x": 302, "y": 535, "w": 181, "h": 324, "px": 382.66, "py": 554.4, "layer": "behind", "swing": "legB" },
+    { "key": "wolf_legH2", "x": 563, "y": 508, "w": 182, "h": 416, "px": 644.48, "py": 526.68, "layer": "front", "swing": "legB" },
+    { "key": "wolf_legF2", "x": 725, "y": 508, "w": 181, "h": 416, "px": 805.6, "py": 526.68, "layer": "front", "swing": "legA" },
+    { "key": "wolf_head", "x": 503, "y": 0, "w": 504, "h": 369, "px": 644.48, "py": 332.64, "layer": "front", "swing": "head" }
+  ]},
+  "bear": { "w": 1016, "h": 751, "parts": [
+    { "key": "bear_legH1", "x": 0, "y": 390, "w": 203, "h": 361, "px": 91.44, "py": 413.05, "layer": "behind", "swing": "legA" },
+    { "key": "bear_legF1", "x": 274, "y": 435, "w": 183, "h": 316, "px": 355.6, "py": 450.6, "layer": "behind", "swing": "legB" },
+    { "key": "bear_legH2", "x": 447, "y": 413, "w": 203, "h": 338, "px": 538.48, "py": 428.07, "layer": "front", "swing": "legB" },
+    { "key": "bear_legF2", "x": 711, "y": 390, "w": 264, "h": 361, "px": 812.8, "py": 413.05, "layer": "front", "swing": "legA" },
+    { "key": "bear_head", "x": 589, "y": 60, "w": 427, "h": 360, "px": 690.88, "py": 375.5, "layer": "front", "swing": "head" }
+  ]},
+  "lion": { "w": 1002, "h": 999, "parts": [
+    { "key": "lion_tail", "x": 0, "y": 479, "w": 210, "h": 320, "px": 180.36, "py": 579.42, "layer": "behind", "swing": "tail" },
+    { "key": "lion_legH1", "x": 90, "y": 579, "w": 170, "h": 400, "px": 160.32, "py": 599.4, "layer": "behind", "swing": "legA" },
+    { "key": "lion_legF1", "x": 330, "y": 679, "w": 171, "h": 300, "px": 400.8, "py": 679.32, "layer": "behind", "swing": "legB" },
+    { "key": "lion_legH2", "x": 511, "y": 549, "w": 180, "h": 430, "px": 591.18, "py": 559.44, "layer": "front", "swing": "legB" },
+    { "key": "lion_legF2", "x": 771, "y": 549, "w": 210, "h": 430, "px": 861.72, "py": 559.44, "layer": "front", "swing": "legA" },
+    { "key": "lion_head", "x": 521, "y": 0, "w": 481, "h": 579, "px": 721.44, "py": 519.48, "layer": "front", "swing": "head" }
+  ]},
+  "eagle": { "w": 1025, "h": 949, "parts": [
+    { "key": "eagle_wingL", "x": 0, "y": 0, "w": 574, "h": 645, "px": 512.5, "py": 474.5, "layer": "behind", "swing": "wingL" },
+    { "key": "eagle_wingR", "x": 615, "y": 151, "w": 410, "h": 418, "px": 676.5, "py": 474.5, "layer": "front", "swing": "wingR" }
+  ]},
+  "dragon": { "w": 1003, "h": 948, "parts": [
+    { "key": "dragon_wingL", "x": 0, "y": 0, "w": 581, "h": 587, "px": 521.56, "py": 417.12, "layer": "behind", "swing": "wingL" },
+    { "key": "dragon_tail", "x": 0, "y": 360, "w": 320, "h": 540, "px": 280.84, "py": 492.96, "layer": "behind", "swing": "tail" },
+    { "key": "dragon_wingR", "x": 832, "y": 331, "w": 171, "h": 313, "px": 862.58, "py": 398.16, "layer": "front", "swing": "wingR" }
+  ]}
+};
+
+// 立即加載所有木偶部件底圖與分件
+for (const name in PARTS) {
+  loadImg(name + '_pbase', 'assets/parts/' + name + '_base.png');
+  PARTS[name].parts.forEach(p => loadImg('p_' + p.key, 'assets/parts/' + p.key + '.png'));
+}
+// 👗 立即加載所有玩家套裝骨架部件（唐裝、公主裝、牛仔裝）
+['tang', 'princess', 'cowboy'].forEach(c => {
+  loadImg('player_' + c + '_pbase', 'assets/parts/player_' + c + '_base.png');
+  loadImg('p_player_' + c + '_head', 'assets/parts/player_' + c + '_head.png');
+  loadImg('p_player_' + c + '_legL', 'assets/parts/player_' + c + '_legL.png');
+  loadImg('p_player_' + c + '_legR', 'assets/parts/player_' + c + '_legR.png');
+});
+
+// 若有遠端 parts.json 更新則熱加載
 fetch('assets/parts/parts.json').then(r => r.json()).then(data => {
   for (const name in data) {
     PARTS[name] = data[name];
-    loadImg(name + '_pbase', 'assets/parts/' + name + '_base.png');
-    data[name].parts.forEach(p => loadImg('p_' + p.key, 'assets/parts/' + p.key + '.png'));
   }
-  // 👗 載入所有玩家套裝骨架部件（唐裝、公主裝、牛仔裝）
-  ['tang', 'princess', 'cowboy'].forEach(c => {
-    loadImg('player_' + c + '_pbase', 'assets/parts/player_' + c + '_base.png');
-    loadImg('p_player_' + c + '_head', 'assets/parts/player_' + c + '_head.png');
-    loadImg('p_player_' + c + '_legL', 'assets/parts/player_' + c + '_legL.png');
-    loadImg('p_player_' + c + '_legR', 'assets/parts/player_' + c + '_legR.png');
-  });
 }).catch(() => {});
 
 /* 通用木偶繪製：底圖＋可旋轉部件，頭身手腳隨動作自然擺動
@@ -4165,13 +4211,15 @@ function drawPlayer() {
     }
   }
 
-  if (!okP && pim) {
-    // 備用：整圖繪製
+  const cost = (typeof player !== 'undefined' && player.costume) ? player.costume : 'red';
+  const costPim = (cost && cost !== 'red' && IMGS['cost_' + cost]) ? IMGS['cost_' + cost] : pim;
+  if (!okP && costPim) {
+    // 備用：高解像套裝整圖繪製
     const dh = dh0;
-    const dw = dh * (pim.width / pim.height);
+    const dw = dh * (costPim.width / costPim.height);
     const tilt = walk ? Math.sin(player.animT * 3.2) * 0.05 : 0;
     ctx.rotate(tilt);
-    ctx.drawImage(pim, -dw/2, -dh, dw, dh);
+    ctx.drawImage(costPim, -dw/2, -dh, dw, dh);
     ctx.restore();
     drawJumpDots();
     return;
@@ -4837,7 +4885,16 @@ function drawMiniPlayer(x, yB, dh, dir, ph) {
   const meta = PARTS.player;
   const cost = (typeof player !== 'undefined' && player && player.costume) ? player.costume : (typeof wardrobe !== 'undefined' && wardrobe.eq ? wardrobe.eq : 'red');
   const base = (cost && cost !== 'red' && IMGS['player_' + cost + '_pbase']) ? IMGS['player_' + cost + '_pbase'] : (meta ? IMGS.player_pbase : null);
-  if (!meta || !base) { mctx.restore(); return; }   // 部件未載入完成前先不畫（避免出現圓點替身）
+  if (!meta || !base) {
+    const costPim = (cost && cost !== 'red' && IMGS['cost_' + cost]) ? IMGS['cost_' + cost] : IMGS.player;
+    if (costPim) {
+      const dw = dh * (costPim.width / costPim.height);
+      mctx.scale(dir, 1);
+      mctx.drawImage(costPim, -dw / 2, -dh, dw, dh);
+    }
+    mctx.restore();
+    return;
+  }
 
   const dw = dh * (meta.w / meta.h);
   const sx = dw / meta.w, sy = dh / meta.h;
