@@ -413,13 +413,21 @@ fetch('assets/parts/parts.json').then(r => r.json()).then(data => {
     loadImg(name + '_pbase', 'assets/parts/' + name + '_base.png');
     data[name].parts.forEach(p => loadImg('p_' + p.key, 'assets/parts/' + p.key + '.png'));
   }
+  // 👗 載入所有玩家套裝骨架部件（唐裝、公主裝、牛仔裝）
+  ['tang', 'princess', 'cowboy'].forEach(c => {
+    loadImg('player_' + c + '_pbase', 'assets/parts/player_' + c + '_base.png');
+    loadImg('p_player_' + c + '_head', 'assets/parts/player_' + c + '_head.png');
+    loadImg('p_player_' + c + '_legL', 'assets/parts/player_' + c + '_legL.png');
+    loadImg('p_player_' + c + '_legR', 'assets/parts/player_' + c + '_legR.png');
+  });
 }).catch(() => {});
 
 /* 通用木偶繪製：底圖＋可旋轉部件，頭身手腳隨動作自然擺動
    (x, yBottom) = 角色底部中心（世界座標已轉螢幕）；dw = 目標寬度；dir<0 時水平翻轉 */
 function drawPuppet(name, x, yBottom, dw, dir, anim) {
   const meta = PARTS[name];
-  const base = IMGS[name + '_pbase'];
+  const cost = (name === 'player' && typeof player !== 'undefined' && player && player.costume) ? player.costume : null;
+  const base = (cost && cost !== 'red' && IMGS['player_' + cost + '_pbase']) ? IMGS['player_' + cost + '_pbase'] : (meta ? IMGS[name + '_pbase'] : null);
   if (!meta || !base) return false;
   const ph   = anim.phase   || 0;    // 步行相位
   const move = anim.move    || 0;    // 移動強度 0~1
@@ -447,7 +455,10 @@ function drawPuppet(name, x, yBottom, dw, dir, anim) {
   const LY = py => py * sy - dh;
 
   function drawPart(p, angle) {
-    const im = IMGS['p_' + p.key];
+    const imKey = (cost && cost !== 'red' && IMGS['p_player_' + cost + '_' + p.key.replace('player_', '')])
+      ? 'p_player_' + cost + '_' + p.key.replace('player_', '')
+      : 'p_' + p.key;
+    const im = IMGS[imKey] || IMGS['p_' + p.key];
     if (!im) return;
     const px = LX(p.px), py = LY(p.py);
     ctx.save();
@@ -4051,7 +4062,7 @@ function drawPlayer() {
     }
   }
 
-  // 👗 服裝帽飾：唐裝瓜皮帽 / 公主皇冠 / 牛仔帽
+  // 👗 服裝帽飾與精緻細節：唐裝瓜皮帽＋盤扣 / 公主皇冠＋寶石 / 牛仔帽＋皮帶扣
   if (okP && meta && player.costume && player.costume !== 'red') {
     const hd = meta.parts.find(q => q.key === 'player_head');
     if (hd) {
@@ -4068,6 +4079,15 @@ function drawPlayer() {
         ctx.beginPath(); ctx.ellipse(hcx, hty + 3, hw * 0.46, hw * 0.30, 0, Math.PI, 0, true); ctx.stroke();
         ctx.fillStyle = '#c22727';
         ctx.beginPath(); ctx.arc(hcx, hty + 3 - hw * 0.28, 3, 0, Math.PI * 2); ctx.fill();
+        // 🏮 唐裝胸前金色盤扣
+        ctx.fillStyle = '#ffd54a';
+        ctx.strokeStyle = '#8a5a10';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+          const by = -dh0 * 0.50 + i * 6.5;
+          ctx.beginPath(); ctx.arc(dw0 * 0.04, by, 1.8, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(dw0 * 0.04 - 3.5, by); ctx.lineTo(dw0 * 0.04 + 3.5, by); ctx.stroke();
+        }
       } else if (player.costume === 'princess') {
         // 👑 金皇冠＋紅寶石
         const cw = hw * 0.55, cy0 = hty + 5;
@@ -4083,6 +4103,10 @@ function drawPlayer() {
         ctx.closePath(); ctx.fill();
         ctx.fillStyle = '#e03030';
         ctx.beginPath(); ctx.arc(hcx, cy0 - 5.5, 1.8, 0, Math.PI * 2); ctx.fill();
+        // 👑 公主胸前閃亮藍寶石與珍珠領邊
+        ctx.fillStyle = '#5ac8fa';
+        ctx.beginPath(); ctx.arc(dw0 * 0.03, -dh0 * 0.48, 2.2, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ffd54a'; ctx.lineWidth = 1; ctx.stroke();
       } else if (player.costume === 'cowboy') {
         // 🤠 牛仔帽：寬帽檐＋圓頂＋帽帶
         ctx.fillStyle = '#7a4a1e';
@@ -4091,6 +4115,9 @@ function drawPlayer() {
         ctx.beginPath(); ctx.ellipse(hcx, hty + 3, hw * 0.34, hw * 0.26, 0, Math.PI, 0, true); ctx.fill();
         ctx.strokeStyle = '#5e3a14'; ctx.lineWidth = 1.4;
         ctx.beginPath(); ctx.moveTo(hcx - hw * 0.34, hty + 4); ctx.lineTo(hcx + hw * 0.34, hty + 4); ctx.stroke();
+        // 🤠 西部牛仔金星皮帶扣
+        ctx.fillStyle = '#ffd54a';
+        ctx.beginPath(); ctx.arc(dw0 * 0.02, -dh0 * 0.34, 2.2, 0, Math.PI * 2); ctx.fill();
       }
       ctx.restore();
     }
@@ -4808,7 +4835,8 @@ function drawMiniPlayer(x, yB, dh, dir, ph) {
   mctx.fill();
 
   const meta = PARTS.player;
-  const base = IMGS.player_pbase;
+  const cost = (typeof player !== 'undefined' && player && player.costume) ? player.costume : (typeof wardrobe !== 'undefined' && wardrobe.eq ? wardrobe.eq : 'red');
+  const base = (cost && cost !== 'red' && IMGS['player_' + cost + '_pbase']) ? IMGS['player_' + cost + '_pbase'] : (meta ? IMGS.player_pbase : null);
   if (!meta || !base) { mctx.restore(); return; }   // 部件未載入完成前先不畫（避免出現圓點替身）
 
   const dw = dh * (meta.w / meta.h);
@@ -4817,9 +4845,10 @@ function drawMiniPlayer(x, yB, dh, dir, ph) {
   mctx.translate(0, -Math.abs(Math.sin(ph)) * dh * 0.035);   // 步行彈跳
   mctx.rotate(Math.sin(ph) * 0.028);
 
-  // 小披肩（隨步行波浪擺動）
+  // 小披肩（隨步行波浪擺動，按套裝配色）
   const wob = Math.sin(menuT * 6) * dh * 0.035;
-  mctx.fillStyle = '#c22727';
+  const capeCol = (typeof COSTUMES !== 'undefined' && COSTUMES[cost]) ? COSTUMES[cost].cape : null;
+  mctx.fillStyle = capeCol ? capeCol[0] : '#c22727';
   mctx.beginPath();
   mctx.moveTo(-dw * 0.05, -dh * 0.74);
   mctx.quadraticCurveTo(-dw * 0.44 - wob, -dh * 0.48, -dw * 0.34 - wob * 1.5, -dh * 0.14);
@@ -4829,7 +4858,10 @@ function drawMiniPlayer(x, yB, dh, dir, ph) {
 
   const drawP = (key, ang) => {
     const p = meta.parts.find(q => q.key === key);
-    const im = IMGS['p_' + key];
+    const imKey = (cost && cost !== 'red' && IMGS['p_player_' + cost + '_' + key.replace('player_', '')])
+      ? 'p_player_' + cost + '_' + key.replace('player_', '')
+      : 'p_' + key;
+    const im = IMGS[imKey] || IMGS['p_' + key];
     if (!p || !im) return;
     const px = p.px * sx - dw / 2, py = p.py * sy - dh;
     mctx.save();
@@ -4843,6 +4875,38 @@ function drawMiniPlayer(x, yB, dh, dir, ph) {
   mctx.drawImage(base, -dw / 2, -dh, dw, dh);                  // 身體
   drawP('player_legR', Math.sin(ph + Math.PI) * 0.5);          // 前腿
   drawP('player_head', Math.sin(ph * 0.5) * 0.06 + Math.sin(menuT * 3) * 0.04);  // 萌萌點頭
+
+  // 迷你版小帽飾 / 皇冠 / 盤扣
+  if (cost && cost !== 'red') {
+    const hd = meta.parts.find(q => q.key === 'player_head');
+    if (hd) {
+      const hw = hd.w * sx;
+      const hcx = hd.x * sx - dw / 2 + hw * 0.62;
+      const hty = hd.y * sy - dh;
+      mctx.save();
+      if (cost === 'tang') {
+        mctx.fillStyle = '#2a2a33';
+        mctx.beginPath(); mctx.ellipse(hcx, hty + 2, hw * 0.44, hw * 0.28, 0, Math.PI, 0, true); mctx.fill();
+        mctx.fillStyle = '#c22727';
+        mctx.beginPath(); mctx.arc(hcx, hty + 2 - hw * 0.26, 2.5, 0, Math.PI * 2); mctx.fill();
+      } else if (cost === 'princess') {
+        mctx.fillStyle = '#f5c542';
+        mctx.beginPath();
+        mctx.moveTo(hcx - hw * 0.26, hty + 3);
+        mctx.lineTo(hcx - hw * 0.26, hty - 5);
+        mctx.lineTo(hcx, hty - 8);
+        mctx.lineTo(hcx + hw * 0.26, hty - 5);
+        mctx.lineTo(hcx + hw * 0.26, hty + 3);
+        mctx.closePath(); mctx.fill();
+      } else if (cost === 'cowboy') {
+        mctx.fillStyle = '#7a4a1e';
+        mctx.beginPath(); mctx.ellipse(hcx, hty + 4, hw * 0.58, 2.8, 0, 0, Math.PI * 2); mctx.fill();
+        mctx.fillStyle = '#8a5a2a';
+        mctx.beginPath(); mctx.ellipse(hcx, hty + 2, hw * 0.32, hw * 0.24, 0, Math.PI, 0, true); mctx.fill();
+      }
+      mctx.restore();
+    }
+  }
   mctx.restore();
 }
 
