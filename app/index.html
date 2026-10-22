@@ -586,6 +586,71 @@ function drawCapeFlow(dw, dh, vx, vy, air, cape0, cape1, capeEdge) {
   ctx.lineWidth = 1;
   ctx.stroke();
 }
+
+/* 🎀 飄帶與流蘇動態物理：絲綢飄帶、披肩流蘇、紅領巾、皇家拖尾 */
+function drawRibbonFlow(ax, ay, length, vx, vy, air, col0, col1, width, customWobble) {
+  const segs = 7;
+  const segLen = length / segs;
+  const speed = Math.min(Math.abs(vx) / 420, 1);
+  const target = 0.46 + speed * 1.05 + Math.max(0, -vy / 800) * 0.75 - Math.max(0, vy / 1000) * 0.25;
+  const pts = [[ax, ay]];
+  let ang = 0.55;
+  const wobFreq = customWobble || 5;
+  for (let i = 1; i <= segs; i++) {
+    ang += (target - ang) * 0.35;
+    const wob = Math.sin(time * (wobFreq + speed * 5) - i * 0.9) * (0.12 + speed * 0.12 + air * 0.10);
+    const a = ang + wob;
+    pts.push([pts[i-1][0] - Math.sin(a) * segLen, pts[i-1][1] + Math.cos(a) * segLen]);
+  }
+  ctx.save();
+  ctx.beginPath();
+  for (let i = 0; i <= segs; i++) {
+    const w = (1 - i / (segs + 1)) * width;
+    const p = pts[i], n = pts[Math.min(i + 1, segs)], m = pts[Math.max(i - 1, 0)];
+    const dx = n[0] - m[0], dy = n[1] - m[1], L = Math.hypot(dx, dy) || 1;
+    ctx[i ? 'lineTo' : 'moveTo'](p[0] - dy / L * w, p[1] + dx / L * w);
+  }
+  for (let i = segs; i >= 0; i--) {
+    const w = (1 - i / (segs + 1)) * width;
+    const p = pts[i], n = pts[Math.min(i + 1, segs)], m = pts[Math.max(i - 1, 0)];
+    const dx = n[0] - m[0], dy = n[1] - m[1], L = Math.hypot(dx, dy) || 1;
+    ctx.lineTo(p[0] + dy / L * w, p[1] - dx / L * w);
+  }
+  ctx.closePath();
+  const g = ctx.createLinearGradient(ax, ay, pts[segs][0], pts[segs][1]);
+  g.addColorStop(0, col0);
+  g.addColorStop(1, col1);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.restore();
+}
+
+/* 👗 每套服裝專屬的飄動頭篷、斗篷、流蘇與裝飾 */
+function drawCostumeFlairs(cost, dw, dh, vx, vy, air) {
+  const speed = Math.min(Math.abs(vx) / 420, 1);
+  if (cost === 'red') {
+    // 🧺 小紅帽：經典紅色大頭篷與飄逸紅斗篷（隨風浪湧飄揚）
+    drawCapeFlow(dw, dh, vx, vy, air, '#c22727', '#7e1414', 'rgba(90,10,10,0.55)');
+  } else if (cost === 'tang') {
+    // 🏮 唐裝：髮髻紅流蘇與金色雙長飄帶
+    drawRibbonFlow(-dw * 0.12, -dh * 0.78, dh * 0.45, vx, vy, air, '#c22727', '#8a1010', 3.5, 6);   // 髮髻流蘇
+    drawRibbonFlow(-dw * 0.16, -dh * 0.52, dh * 0.55, vx, vy, air, '#ffd54a', '#c49216', 4.5, 4.5); // 金袍飄帶
+  } else if (cost === 'princess') {
+    // 👑 公主裝：粉紅皇家飄紗拖尾與閃耀仙子星塵
+    drawRibbonFlow(-dw * 0.18, -dh * 0.44, dh * 0.65, vx, vy, air, 'rgba(247,168,200,0.85)', 'rgba(209,106,154,0.45)', 6.5, 4);
+    if ((speed > 0.08 || air > 0) && Math.random() < 0.35) {
+      // 飄逸星塵
+      const spx = -dw * 0.22 - Math.random() * dw * 0.30;
+      const spy = -dh * 0.15 - Math.random() * dh * 0.40;
+      ctx.fillStyle = (Math.random() > 0.5) ? '#ffd54a' : '#ffffff';
+      ctx.beginPath(); ctx.arc(spx, spy, 1.2 + Math.random() * 1.6, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (cost === 'cowboy') {
+    // 🤠 西部牛仔：飛揚紅領巾與斗篷皮革流蘇
+    drawRibbonFlow(-dw * 0.10, -dh * 0.68, dh * 0.36, vx, vy, air, '#c22727', '#8e1414', 3.5, 7);   // 紅領巾飄揚
+    drawRibbonFlow(-dw * 0.16, -dh * 0.46, dh * 0.42, vx, vy, air, '#8a5a2a', '#5e3a14', 5.0, 5);   // 披肩流蘇
+  }
+}
 const TH = () => STAGES[stage - 1];
 let time = 0;
 let inputX = 0, wantJump = false, wantAtk = false;
@@ -4032,20 +4097,44 @@ function drawPlayer() {
   const cost = (typeof player !== 'undefined' && player.costume) ? player.costume : 'red';
   const cImg = IMGS['cost_' + cost + '_sprite'] || IMGS['cost_' + cost] || IMGS.player;
   const dh = 60;
-  const dw = dh * (cImg ? cImg.width / cImg.height : 0.72);
+  const dw = dh * (cImg && cImg.width ? cImg.width / cImg.height : 0.72);
   const air = player.onGround ? 0 : 1;
+  const move = walk ? Math.min(Math.abs(player.vx) / 260, 1) : 0;
+  const ph = player.animT * 3.2;
 
-  // 身體運動動態：步行彈跳、跑步傾斜、跳躍伸展、落地壓扁
+  // 1. 飄動頭篷 / 斗篷 / 流蘇 / 飄紗（隨風動態飄揚，在身體後方繪製）
+  drawCostumeFlairs(cost, dw, dh, player.vx, player.vy, air);
+
   ctx.save();
-  const lean = clamp(player.vx / 420, -1, 1) * 0.08 + (walk ? Math.sin(player.animT * 3.2) * 0.03 : 0);
+
+  // 身體運動動態：步伐起伏、跑步前傾、跳躍拉伸、落地壓扁彈性
+  const lean = clamp(player.vx / 420, -1, 1) * 0.08 + (walk ? Math.sin(ph) * 0.03 : 0);
   ctx.rotate(lean);
   const stY = 1 + air * 0.06 - (player.landT || 0) * 0.14;
   const stX = 1 - air * 0.03 + (player.landT || 0) * 0.16;
   ctx.scale(stX, stY);
 
-  // 繪製 100% 完全對應套裝卡片的高解析度角色！
-  if (cImg) {
-    ctx.drawImage(cImg, -dw / 2, -dh, dw, dh);
+  if (cImg && cImg.width && cImg.height) {
+    const sw = cImg.width, sh = cImg.height;
+
+    // A. 腿部／腳步動態邁步（下段 30%）：左右腿隨步伐前後交叉邁步擺動
+    const legAngle = Math.sin(ph) * 0.18 * move;
+    ctx.save();
+    ctx.translate(0, -dh * 0.28);
+    ctx.rotate(legAngle);
+    ctx.drawImage(cImg, 0, sh * 0.70, sw, sh * 0.30, -dw / 2, 0, dw, dh * 0.30);
+    ctx.restore();
+
+    // B. 身體／軀幹與手部（中段 40%）：隨呼吸微幅起伏與前傾
+    ctx.drawImage(cImg, 0, sh * 0.32, sw, sh * 0.40, -dw / 2, -dh * 0.68, dw, dh * 0.40);
+
+    // C. 頭部／髮髻／頭篷（上段 36%）：跑步微幅點頭、跳躍抬頭、生動可愛
+    const headAngle = Math.sin(ph * 0.5) * 0.07 * move + (air ? -0.05 : 0) + Math.sin(time * 2.2) * 0.025;
+    ctx.save();
+    ctx.translate(0, -dh * 0.65);
+    ctx.rotate(headAngle);
+    ctx.drawImage(cImg, 0, 0, sw, sh * 0.35, -dw / 2, -dh * 0.35, dw, dh * 0.35);
+    ctx.restore();
   } else {
     // 🛡️ 載入中保護：繪製套裝配色的過渡剪影，保證角色在任何網絡延遲下絕不隱形！
     const colMap = { red: '#c22727', tang: '#d4a017', princess: '#f7a8c8', cowboy: '#8a5a2a' };
@@ -4737,7 +4826,7 @@ function drawMiniPlayer(x, yB, dh, dir, ph) {
 
   const cost = (typeof player !== 'undefined' && player && player.costume) ? player.costume : (typeof wardrobe !== 'undefined' && wardrobe.eq ? wardrobe.eq : 'red');
   const cImg = IMGS['cost_' + cost + '_sprite'] || IMGS['cost_' + cost] || IMGS.player;
-  if (!cImg) {
+  if (!cImg || !cImg.width || !cImg.height) {
     const colMap = { red: '#c22727', tang: '#d4a017', princess: '#f7a8c8', cowboy: '#8a5a2a' };
     mctx.scale(dir, 1);
     mctx.fillStyle = colMap[cost] || '#c22727';
@@ -4750,7 +4839,28 @@ function drawMiniPlayer(x, yB, dh, dir, ph) {
   mctx.scale(dir, 1);
   mctx.translate(0, -Math.abs(Math.sin(ph)) * dh * 0.045);   // 步行彈跳
   mctx.rotate(Math.sin(ph) * 0.035);
-  mctx.drawImage(cImg, -dw / 2, -dh, dw, dh);
+
+  const sw = cImg.width, sh = cImg.height;
+  const legAngle = Math.sin(ph) * 0.16;
+  const headAngle = Math.sin(ph * 0.5) * 0.06;
+
+  // 腿部邁步
+  mctx.save();
+  mctx.translate(0, -dh * 0.28);
+  mctx.rotate(legAngle);
+  mctx.drawImage(cImg, 0, sh * 0.70, sw, sh * 0.30, -dw / 2, 0, dw, dh * 0.30);
+  mctx.restore();
+
+  // 身體軀幹
+  mctx.drawImage(cImg, 0, sh * 0.32, sw, sh * 0.40, -dw / 2, -dh * 0.68, dw, dh * 0.40);
+
+  // 頭部點頭
+  mctx.save();
+  mctx.translate(0, -dh * 0.65);
+  mctx.rotate(headAngle);
+  mctx.drawImage(cImg, 0, 0, sw, sh * 0.35, -dw / 2, -dh * 0.35, dw, dh * 0.35);
+  mctx.restore();
+
   mctx.restore();
 }
 
