@@ -4023,7 +4023,7 @@ function drawPlayer() {
 
   const cost = (typeof player !== 'undefined' && player.costume) ? player.costume : 'red';
   const cImg = IMGS['cost_' + cost + '_sprite'] || IMGS['cost_' + cost] || IMGS.player;
-  const dh = dh0;
+  const dh = 60;
   const dw = dh * (cImg ? cImg.width / cImg.height : 0.72);
   const air = player.onGround ? 0 : 1;
 
@@ -4133,77 +4133,6 @@ function drawPlayer() {
   }
 
   ctx.restore();
-  drawJumpDots();
-  return;
-
-  ctx.fillStyle = '#2d4a8a';
-  roundRect(-9 + legSwing, -13, 8, 13, 3); ctx.fill();
-  roundRect( 1 - legSwing, -13, 8, 13, 3); ctx.fill();
-
-  ctx.fillStyle = '#5c3a1e';
-  roundRect(-10 + legSwing, -6, 10, 6, 3); ctx.fill();
-  roundRect( 0 - legSwing, -6, 10, 6, 3); ctx.fill();
-
-  ctx.fillStyle = '#d63a2f';
-  roundRect(-11, -30, 22, 20, 7); ctx.fill();
-
-  ctx.fillStyle = '#f5c542';
-  ctx.fillRect(-11, -18, 22, 4);
-
-  ctx.fillStyle = '#d63a2f';
-  const armSwing = walk ? -legSwing * 0.9 : 0;
-  roundRect(-15, -28 + armSwing * 0.3, 6, 13, 3); ctx.fill();
-  roundRect(  9, -28 - armSwing * 0.3, 6, 13, 3); ctx.fill();
-
-  ctx.fillStyle = '#f7c9a3';
-  ctx.beginPath();
-  ctx.arc(-12, -15 + armSwing * 0.3, 3.4, 0, Math.PI*2);
-  ctx.arc( 12, -15 - armSwing * 0.3, 3.4, 0, Math.PI*2);
-  ctx.fill();
-
-  ctx.fillStyle = '#f7c9a3';
-  ctx.beginPath();
-  ctx.arc(1, -38, 9.5, 0, Math.PI*2);
-  ctx.fill();
-
-  ctx.fillStyle = '#5a3418';
-  ctx.beginPath();
-  ctx.arc(-5, -38, 8, 0, Math.PI*2);
-  ctx.fill();
-
-  ctx.fillStyle = '#c0392b';
-  ctx.beginPath();
-  ctx.arc(1, -41, 10.5, Math.PI, 0);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(1, -41, 12, 3.5, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(-9, -43);
-  ctx.quadraticCurveTo(-16, -50, -10, -52);
-  ctx.quadraticCurveTo(-6, -50, -4, -44);
-  ctx.fill();
-
-  ctx.fillStyle = '#222';
-  ctx.beginPath();
-  ctx.arc(5, -39, 1.9, 0, Math.PI*2);
-  ctx.arc(-1, -39, 1.9, 0, Math.PI*2);
-  ctx.fill();
-
-  ctx.fillStyle = 'rgba(240,120,120,0.5)';
-  ctx.beginPath();
-  ctx.arc(8, -34, 3, 0, Math.PI*2);
-  ctx.arc(-4, -34, 2.4, 0, Math.PI*2);
-  ctx.fill();
-
-  ctx.strokeStyle = '#8b3a3a';
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  ctx.arc(2, -34.5, 3, 0.2, Math.PI - 0.2);
-  ctx.stroke();
-
-  ctx.restore();
-
   drawJumpDots();
 }
 
