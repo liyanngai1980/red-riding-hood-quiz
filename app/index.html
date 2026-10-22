@@ -403,18 +403,12 @@ function loadImg(key, src) {
 loadImg('hydra_body',      'assets/hydra_body.png');        // 🐉 九頭巨龍：高解像身軀
 loadImg('hydra_head',      'assets/hydra_head.png');        // 閉口龍頭
 loadImg('hydra_head_fire', 'assets/hydra_head_fire.png');   // 張口噴火龍頭
-// ⚡ 優先立即加載第 1 關森林背景與小紅帽套裝，秒開無延遲
-function loadStageBgs(idx) {
-  const s = STAGES[idx || 0];
-  if (!s) return;
+// ⚡ 立即加載所有關卡高解像度背景（已壓縮優化，秒開秒載）
+STAGES.forEach(s => {
   loadImg(s.bg + '_far',  'assets/' + s.bg + '_far.png');
   loadImg(s.bg + '_mid',  'assets/' + s.bg + '_mid.png');
   loadImg(s.bg + '_near', 'assets/' + s.bg + '_near.png');
-}
-loadStageBgs(0);
-setTimeout(() => {
-  STAGES.forEach((s, idx) => { if (idx !== 0) loadStageBgs(idx); });
-}, 800);
+});
 
 /* ====================== 骨架木偶部件（四肢/翅膀/頭部） ====================== */
 // 內建完整骨架定義（保證本地 file:// 與無網絡環境下 100% 立即啟動高解像木偶）
@@ -727,7 +721,6 @@ const REVELATION_QS = [
 
 /* ====================== 關卡建構 ====================== */
 function buildLevel() {
-  loadStageBgs(stage);
   if (keyItems.length) { keyCount += keyItems.length; }   // 重生/換關前，飛行中的鑰匙先入帳
   keyItems = [];
   platforms = [];
@@ -4114,26 +4107,8 @@ function drawPlayer() {
   ctx.scale(stX, stY);
 
   if (cImg && cImg.width && cImg.height) {
-    const sw = cImg.width, sh = cImg.height;
-
-    // A. 腿部／腳步動態邁步（下段 30%）：左右腿隨步伐前後交叉邁步擺動
-    const legAngle = Math.sin(ph) * 0.18 * move;
-    ctx.save();
-    ctx.translate(0, -dh * 0.28);
-    ctx.rotate(legAngle);
-    ctx.drawImage(cImg, 0, sh * 0.70, sw, sh * 0.30, -dw / 2, 0, dw, dh * 0.30);
-    ctx.restore();
-
-    // B. 身體／軀幹與手部（中段 40%）：隨呼吸微幅起伏與前傾
-    ctx.drawImage(cImg, 0, sh * 0.32, sw, sh * 0.40, -dw / 2, -dh * 0.68, dw, dh * 0.40);
-
-    // C. 頭部／髮髻／頭篷（上段 36%）：跑步微幅點頭、跳躍抬頭、生動可愛
-    const headAngle = Math.sin(ph * 0.5) * 0.07 * move + (air ? -0.05 : 0) + Math.sin(time * 2.2) * 0.025;
-    ctx.save();
-    ctx.translate(0, -dh * 0.65);
-    ctx.rotate(headAngle);
-    ctx.drawImage(cImg, 0, 0, sw, sh * 0.35, -dw / 2, -dh * 0.35, dw, dh * 0.35);
-    ctx.restore();
+    // 🎨 完整超高解析度單次繪製（零切縫、零失真、保持宮崎駿原畫細膩筆觸）
+    ctx.drawImage(cImg, -dw / 2, -dh, dw, dh);
   } else {
     // 🛡️ 載入中保護：繪製套裝配色的過渡剪影，保證角色在任何網絡延遲下絕不隱形！
     const colMap = { red: '#c22727', tang: '#d4a017', princess: '#f7a8c8', cowboy: '#8a5a2a' };
