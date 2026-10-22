@@ -301,6 +301,9 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d', { alpha: false });
 
 let W = 0, H = 0, DPR = 1, scale = 1;
+const nav = typeof navigator !== 'undefined' ? navigator : { userAgent: '', platform: '', maxTouchPoints: 0 };
+const isIOS = /iPad|iPhone|iPod/.test(nav.userAgent) || (nav.platform === 'MacIntel' && (nav.maxTouchPoints || 0) > 1);
+const isMobile = isIOS || /Android|webOS|BlackBerry|IEMobile|Opera Mini/i.test(nav.userAgent);
 
 function resize() {
   W = window.innerWidth;
@@ -311,7 +314,22 @@ function resize() {
   computeScale();
 }
 function computeScale() {
-  scale = Math.max(W / 1280, H / 720, 0.5);
+  const isPortrait = H > W;
+  if (isPortrait) {
+    // 📱 iOS 直向模式：自適應以 820px 寬度為視野基準，保證視野開闊清晰，平台與怪物盡收眼底
+    scale = Math.max(W / 820, 0.46);
+  } else {
+    // 💻 Desktop macOS / 橫向全螢幕：以標準 1280x720 橫向寬屏為基準
+    scale = Math.max(W / 1280, H / 720, 0.5);
+  }
+}
+function getUIButtons() {
+  const isPort = H > W;
+  return {
+    joy:  { bx: isPort ? 68 : 96, by: isPort ? H - 95 : H - 100 },
+    jump: { bx: isPort ? W - 62 : W - 88, by: isPort ? H - 90 : H - 96 },
+    atk:  { bx: isPort ? W - 145 : W - 196, by: isPort ? H - 65 : H - 96 }
+  };
 }
 window.addEventListener('resize', resize);
 window.addEventListener('orientationchange', () => setTimeout(resize, 200));
@@ -1089,7 +1107,8 @@ const BGM = (() => {
   btn.title = '橫屏全螢幕';
   btn.style.cssText = 'position:fixed;top:104px;right:10px;z-index:70;width:40px;height:40px;' +
     'border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:rgba(20,30,50,0.55);' +
-    'color:#fff;font-size:19px;cursor:pointer;line-height:1';
+    'color:#fff;font-size:19px;cursor:pointer;line-height:1;' +
+    (isMobile ? '' : 'display:none;');
   document.body.appendChild(btn);
 
   // 「請旋轉手機」提示（iOS Safari 不允許網頁鎖方向時顯示）
@@ -1150,10 +1169,10 @@ const BGM = (() => {
 
 /* ====================== 👗 換裝系統：金幣購買服裝 ====================== */
 const COSTUMES = {
-  red:      { name: '小紅帽',   emoji: '🧺', cost: 0,  desc: '經典紅斗篷',            cape: ['#c22727', '#7e1414', 'rgba(90,10,10,0.55)'] },
-  tang:     { name: '唐裝',     emoji: '🏮', cost: 30, desc: '金黃唐裝＋瓜皮帽',      cape: ['#d4a017', '#8a5a10', 'rgba(120,70,10,0.55)'] },
-  princess: { name: '公主裝',   emoji: '👑', cost: 50, desc: '粉紅公主裙＋金皇冠',    cape: ['#f7a8c8', '#d16a9a', 'rgba(150,60,100,0.55)'] },
-  cowboy:   { name: '西部牛仔', emoji: '🤠', cost: 40, desc: '牛仔帽＋棕色流蘇斗篷',  cape: ['#a9713a', '#6e4518', 'rgba(90,55,20,0.55)'] }
+  red:      { name: '小紅帽',   emoji: '🧺', cost: 0,  desc: '經典紅斗篷 · 六段跳 · 經典捕網', cape: ['#c22727', '#7e1414', 'rgba(90,10,10,0.55)'] },
+  tang:     { name: '唐裝',     emoji: '🏮', cost: 30, desc: '七段跳！扇子索遠程推怪、近程捕捉', cape: ['#d4a017', '#8a5a10', 'rgba(120,70,10,0.55)'] },
+  princess: { name: '公主裝',   emoji: '👑', cost: 50, desc: '跳高降落裙撐如傘緩降飄浮 · 召喚大鳥籠', cape: ['#f7a8c8', '#d16a9a', 'rgba(150,60,100,0.55)'] },
+  cowboy:   { name: '西部牛仔', emoji: '🤠', cost: 40, desc: '三個身位超長距離繩套捕捉 · 旋轉套索', cape: ['#a9713a', '#6e4518', 'rgba(90,55,20,0.55)'] }
 };
 let wardrobe = { owned: ['red'], eq: 'red' };
 try {
@@ -1161,6 +1180,8 @@ try {
   if (w && w.owned && w.owned.includes('red')) wardrobe = w;
 } catch (e) {}
 player.costume = wardrobe.eq;
+player.maxJumps = (player.costume === 'tang') ? 7 : 6;
+player.jumpsLeft = player.maxJumps;
 function saveWard() { try { localStorage.setItem('lrrh_ward', JSON.stringify(wardrobe)); } catch (e) {} }
 
 const wardOverlay = document.getElementById('wardOverlay');
@@ -1183,7 +1204,10 @@ function renderWard() {
     } else if (owned) {
       b.textContent = '穿上';
       b.addEventListener('click', () => {
-        wardrobe.eq = id; player.costume = id; saveWard(); BGM.sfx('correct'); renderWard();
+        wardrobe.eq = id; player.costume = id;
+        player.maxJumps = (id === 'tang') ? 7 : 6;
+        player.jumpsLeft = player.maxJumps;
+        saveWard(); BGM.sfx('correct'); renderWard();
       });
     } else {
       b.textContent = `🪙${c.cost} 購買`;
@@ -1193,6 +1217,8 @@ function renderWard() {
         coinCount -= c.cost;
         wardrobe.owned.push(id);
         wardrobe.eq = id; player.costume = id;
+        player.maxJumps = (id === 'tang') ? 7 : 6;
+        player.jumpsLeft = player.maxJumps;
         saveWard(); BGM.sfx('coin'); renderWard();
       });
     }
@@ -1213,7 +1239,10 @@ function renderOwnRow() {
     d.title = c.name;
     d.innerHTML = `<img src="assets/cost_${id}.png" alt="${c.name}">`;
     d.addEventListener('click', () => {
-      wardrobe.eq = id; player.costume = id; saveWard();
+      wardrobe.eq = id; player.costume = id;
+      player.maxJumps = (id === 'tang') ? 7 : 6;
+      player.jumpsLeft = player.maxJumps;
+      saveWard();
       BGM.sfx('click');
       renderOwnRow();
     });
@@ -1278,13 +1307,14 @@ canvas.addEventListener('pointerdown', e => {
   if (state === 'stageclear') { nextStage(); return; }
   if (state !== 'playing') { showStartMenu(); return; }
 
-  const jbx = W - 88, jby = H - 96;
-  if (Math.hypot(x - jbx, y - jby) < 85) {
+  const ui = getUIButtons();
+  const jbx = ui.jump.bx, jby = ui.jump.by;
+  if (Math.hypot(x - jbx, y - jby) < (H > W ? 68 : 85)) {
     jmp.active = true; jmp.id = e.pointerId;
     return;
   }
-  const abx = W - 196, aby = H - 96;         // 🥅 攻擊鍵（跳躍鍵左邊）
-  if (Math.hypot(x - abx, y - aby) < 58) {
+  const abx = ui.atk.bx, aby = ui.atk.by;         // 🥅/⚔️ 攻擊鍵
+  if (Math.hypot(x - abx, y - aby) < (H > W ? 52 : 58)) {
     atk.active = true; atk.id = e.pointerId;
     return;
   }
@@ -1538,16 +1568,24 @@ function updatePlayer(dt) {
   /* --- 🏇 座駕模式：由座駕帶動，跳過自身重力物理 --- */
   if (player.mount) { updateMountRide(dt); return; }
 
-  /* --- 重力 --- */
-  player.vy += GRAVITY * dt;
-  if (player.vy > MAX_FALL) player.vy = MAX_FALL;
+  /* --- 重力與公主裝傘狀裙擺緩降 --- */
+  const isPrincessGliding = (player.costume === 'princess' && player.vy > 40 && !player.onGround);
+  if (isPrincessGliding) {
+    // 👑 公主跳起下落時，粉紅公主裙如傘撐開，空氣阻力大幅緩降，慢動作優雅飄浮！
+    player.vy += GRAVITY * 0.25 * dt;
+    if (player.vy > 175) player.vy = 175;
+  } else {
+    player.vy += GRAVITY * dt;
+    if (player.vy > MAX_FALL) player.vy = MAX_FALL;
+  }
 
   /* --- 碰撞 --- */
   moveX(player, dt);
   moveY(player, dt);
 
-  /* --- ⭐ 落地時補滿跳躍次數 --- */
+  /* --- ⭐ 落地時補滿跳躍次數（唐裝七段跳，其他套裝六段跳） --- */
   if (player.onGround) {
+    player.maxJumps = (player.costume === 'tang') ? 7 : 6;
     player.jumpsLeft = player.maxJumps;
     player.spinT = 0;
   }
@@ -2075,7 +2113,14 @@ function updateAttack(dt) {
   const t = 0.26 - player.atkT;              // 揮擊經過時間
   if (t < 0.05 || t > 0.2) return;           // 有效判定幀
   const dir = player.facing;
-  const zone = { x: player.x + player.w/2 + (dir > 0 ? 4 : -86), y: player.y - 16, w: 82, h: player.h + 30 };
+  const cost = player.costume || 'red';
+
+  // 🤠 西部牛仔：長距離三個身位套索（約 185px）！
+  // 🏮 唐裝：扇子索長距離推怪（約 210px）！
+  // 👑 公主裝：黃金大鳥籠（約 135px）！
+  // 🧺 小紅帽：標準捕網（82px）！
+  const reachW = (cost === 'cowboy') ? 185 : (cost === 'tang') ? 210 : (cost === 'princess') ? 135 : 82;
+  const zone = { x: player.x + player.w/2 + (dir > 0 ? 4 : -reachW - 4), y: player.y - 18, w: reachW, h: player.h + 34 };
   // 🥅 捕網揮向九頭龍：擋退打斷噴火（殺不死牠，只能用答題逐一滅頭）
   if (hydra && hydra.alive && !hydra.lying && !hydra.grabbed && !hydra.thrown && !player.mount) {
     const hbx = { x: hydra.x - 40, y: GROUND_Y - 470, w: 440, h: 480 };
@@ -2125,17 +2170,34 @@ function updateAttack(dt) {
       return;
     }
   }
-  for (let i = 0; i < enemies.length; i++) {  // 🥅 網住小妖 → 收進網中（不殺死）
+  for (let i = enemies.length - 1; i >= 0; i--) {  // 捕捉小怪或唐裝長距離推怪
     const e = enemies[i];
     if (e.dead) continue;
     if (overlap(zone, e)) {
-      // 🥅 抓到小妖 → 變藍色收進網中（可囤多隻），放出後成為伙伴
+      const dist = (e.x + e.w/2) - (player.x + player.w/2);
+      const absDist = Math.abs(dist);
+
+      // 🏮 唐裝特技：以扇長距離推小怪（> 70px 時扇風強烈推開推飛，不捕捉；<= 70px 近距離時才捕捉）！
+      if (cost === 'tang' && absDist > 70) {
+        e.x += dir * 180;
+        e.vx = dir * 320;
+        spawnDust(e.x + e.w/2, e.y + e.h/2, 12, '#ffd54a');
+        spawnRing(e.x + e.w/2, e.y + e.h/2, '#ff7b7b');
+        BGM.sfx('block');
+        score += 20;
+        player.atkHitDone = true;
+        return;
+      }
+
+      // 捕捉小怪（牛仔三個身位套索捕捉、公主大鳥籠捕捉、唐裝近戰扇捕、小紅帽網捕）
       if (player.holding.length >= 5) { player.atkHitDone = true; return; }   // 網滿了
       player.holding.push(e.kind);
       enemies.splice(i, 1);
       score += 100;
       BGM.sfx('capture');
-      spawnDust(e.x + e.w/2, e.y + e.h/2, 8, '#7db9ff');
+      const ringCol = (cost === 'cowboy') ? '#ffd54a' : (cost === 'princess') ? '#f7a8c8' : '#7db9ff';
+      spawnDust(e.x + e.w/2, e.y + e.h/2, 10, ringCol);
+      spawnRing(e.x + e.w/2, e.y + e.h/2, ringCol);
       player.atkHitDone = true;
       return;
     }
@@ -3593,12 +3655,13 @@ function updateCamera(dt) {
   const viewW = W / scale;
   const viewH = H / scale;
 
-  let tx = player.x + player.w/2 - viewW * 0.4;
+  const isPort = H > W;
+  let tx = player.x + player.w/2 - viewW * (isPort ? 0.35 : 0.4);
   tx = clamp(tx, 0, Math.max(0, WORLD_W - viewW));
   cam.x += (tx - cam.x) * Math.min(1, dt * 7);
 
-  let ty = GROUND_Y - viewH * 0.82;
-  const desired = player.y - viewH * 0.45;
+  let ty = GROUND_Y - viewH * (isPort ? 0.70 : 0.82);
+  const desired = player.y - viewH * (isPort ? 0.40 : 0.45);
   if (ty > desired) ty = desired;
   cam.y += (ty - cam.y) * Math.min(1, dt * 5);
 }
@@ -4100,15 +4163,29 @@ function drawPlayer() {
   ctx.save();
 
   // 身體運動動態：步伐起伏、跑步前傾、跳躍拉伸、落地壓扁彈性
+  const isPrincessGliding = (cost === 'princess' && player.vy > 40 && !player.onGround);
   const lean = clamp(player.vx / 420, -1, 1) * 0.08 + (walk ? Math.sin(ph) * 0.03 : 0);
   ctx.rotate(lean);
-  const stY = 1 + air * 0.06 - (player.landT || 0) * 0.14;
-  const stX = 1 - air * 0.03 + (player.landT || 0) * 0.16;
+  let stY = 1 + air * 0.06 - (player.landT || 0) * 0.14;
+  let stX = 1 - air * 0.03 + (player.landT || 0) * 0.16;
+  if (isPrincessGliding) {
+    // 👑 公主傘狀裙撐開緩降！
+    stX = 1.35;
+    stY = 0.90;
+    ctx.rotate(Math.sin(time * 5) * 0.04);
+  }
   ctx.scale(stX, stY);
 
   if (cImg && cImg.width && cImg.height) {
     // 🎨 完整超高解析度單次繪製（零切縫、零失真、保持宮崎駿原畫細膩筆觸）
     ctx.drawImage(cImg, -dw / 2, -dh, dw, dh);
+    if (isPrincessGliding) {
+      // 👑 裙擺散發出優雅的粉紅星塵光環
+      ctx.fillStyle = (Math.random() > 0.5) ? '#ffd54a' : '#f7a8c8';
+      ctx.beginPath();
+      ctx.arc(-dw * 0.35 + Math.random() * dw * 0.7, -4 + Math.random() * 8, 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else {
     // 🛡️ 載入中保護：繪製套裝配色的過渡剪影，保證角色在任何網絡延遲下絕不隱形！
     const colMap = { red: '#c22727', tang: '#d4a017', princess: '#f7a8c8', cowboy: '#8a5a2a' };
@@ -4493,9 +4570,10 @@ function drawRings() {
 
 /* ---------- 螢幕空間 UI ---------- */
 function drawJoystick() {
+  const ui = getUIButtons();
   let bx, by;
   if (joy.active) { bx = joy.baseX; by = joy.baseY; }
-  else            { bx = 96;        by = H - 100; }
+  else            { bx = ui.joy.bx; by = ui.joy.by; }
 
   ctx.globalAlpha = joy.active ? 0.45 : 0.22;
   ctx.beginPath();
@@ -4534,7 +4612,8 @@ function drawJoystick() {
 }
 
 function drawJumpButton() {
-  const bx = W - 88, by = H - 96;
+  const ui = getUIButtons();
+  const bx = ui.jump.bx, by = ui.jump.by;
   const R = 48;
 
   const canDouble = !player.onGround && player.jumpsLeft > 0 && state === 'playing';
@@ -4602,9 +4681,10 @@ function drawJumpButton() {
   }
 }
 
-/* 🥅 攻擊按鈕（跳躍鍵左邊） */
+/* 🥅/⚔️ 攻擊按鈕（跳躍鍵左邊） */
 function drawAttackButton() {
-  const bx = W - 196, by = H - 96, R = 40;
+  const ui = getUIButtons();
+  const bx = ui.atk.bx, by = ui.atk.by, R = 40;
   const ready = player.atkCD <= 0 && state === 'playing';
 
   ctx.globalAlpha = atk.active ? 0.95 : 0.42;
@@ -4624,7 +4704,7 @@ function drawAttackButton() {
   ctx.strokeStyle = atk.active ? '#ffffff' : 'rgba(30,50,70,0.45)';
   ctx.stroke();
 
-  // 捕捉網圖示
+  // 武器圖示
   ctx.globalAlpha = 1;
   ctx.save();
   ctx.translate(bx, by - 4);
@@ -4644,7 +4724,9 @@ function drawAttackButton() {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = atk.active ? '#ffffff' : (ready ? '#0b3a20' : '#4a545e');
   ctx.globalAlpha = 0.9;
-  ctx.fillText(player.holdingHydra ? '扔龍' : (player.holding.length ? '放出' : '捕捉'), bx, by + 26);
+  const cost = (typeof player !== 'undefined' && player.costume) ? player.costume : 'red';
+  const label = player.holdingHydra ? '扔龍' : (player.holding.length ? '放出' : (cost === 'cowboy' ? '套索' : cost === 'tang' ? '揮扇' : cost === 'princess' ? '鳥籠' : '捕捉'));
+  ctx.fillText(label, bx, by + 26);
   ctx.globalAlpha = 1;
 
   // 🥅 持有徽章：按鈕右上角顯示網中藍色小妖＋數量
@@ -4998,7 +5080,7 @@ buildLevel();
 player.y = GROUND_Y - player.h - 2;
 player.jumpsLeft = player.maxJumps;
 cam.x = 0;
-cam.y = GROUND_Y - (H / scale) * 0.82;
+cam.y = GROUND_Y - (H / scale) * (H > W ? 0.70 : 0.82);
 
 /* ====================== 👧 選單小紅帽：萌萌走來走去 ====================== */
 const menuCv = document.getElementById('menuCanvas');
