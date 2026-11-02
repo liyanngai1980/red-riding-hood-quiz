@@ -1,0 +1,23 @@
+{
+  "name": "小紅帽大冒險 · 學科推理闖關",
+  "short_name": "小紅帽大冒險",
+  "description": "跑酷 × 答題 × 五關冒險 — 邊玩邊學的兒童闖關遊戲",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d1b2a",
+  "theme_color": "#b03a2e",
+  "icons": [
+    {
+      "src": "assets/poster.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/cost_red_sprite.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

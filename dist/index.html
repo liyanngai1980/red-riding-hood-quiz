@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#b03a2e">
 <title>小紅帽大冒險 · 學科推理闖關</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/cost_red_sprite.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&display=swap" rel="stylesheet">
@@ -171,6 +175,37 @@
   /* 👧 選單底部小紅帽走動動畫（在卡片前走過，不擋點擊） */
   #menuCanvas{position:absolute;left:0;bottom:0;width:100%;height:110px;pointer-events:none;z-index:3}
   #startCard{position:relative;z-index:2}
+  
+  /* ====================== 🏆 成就勳章彈窗 ====================== */
+  #achOverlay{position:fixed;inset:0;z-index:86;display:none;align-items:center;justify-content:center;
+    background:rgba(6,14,28,0.72);backdrop-filter:blur(3px)}
+  #achOverlay.show{display:flex}
+  #achCard{width:min(94%,450px);max-height:88%;overflow-y:auto;text-align:center;
+    background:rgba(255,251,238,0.97);border:3px solid #3c6e91;border-radius:18px;padding:16px 14px;
+    color:#1c3a50;font-family:"Noto Serif TC",serif;box-shadow:0 12px 40px rgba(0,0,0,0.55)}
+  #achCard h2{font-family:"YanKaiTC","DFKai-SB","Kaiti TC","STKaiti","Noto Serif TC",serif;
+    font-size:24px;color:#20557c;letter-spacing:2px;margin-bottom:4px}
+  #achSummary{font-size:13px;font-weight:700;color:#3c6e91;margin-bottom:12px}
+  #achList{display:grid;grid-template-columns:1fr;gap:7px;text-align:left}
+  .achItem{display:flex;align-items:center;gap:10px;border:2px solid #bcd1e4;border-radius:12px;
+    padding:8px 10px;background:rgba(240,248,255,0.7);transition:all .15s}
+  .achItem.unl{border-color:#38a169;background:linear-gradient(180deg,#f0fff4,#dcffe4)}
+  .achIcon{font-size:26px;flex:none}
+  .achInfo{flex:1}
+  .achTitle{font-size:14px;font-weight:800;color:#1a365d;display:flex;align-items:center;justify-content:space-between}
+  .achDesc{font-size:11px;color:#4a5568;margin-top:2px}
+  .achTag{font-size:11px;color:#276749;font-weight:700;background:rgba(72,187,120,0.2);padding:2px 6px;border-radius:6px}
+  .achLock{font-size:11px;color:#718096;background:rgba(160,174,192,0.2);padding:2px 6px;border-radius:6px}
+  #achClose{margin-top:12px;border:2px solid #888;border-radius:12px;padding:8px 24px;
+    font-size:14px;font-weight:700;background:#e8e4da;color:#4a4a4a;cursor:pointer}
+
+  /* 🏆 成就浮動提示 Toast */
+  #achToast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:99;
+    display:flex;align-items:center;gap:12px;background:rgba(18,34,54,0.95);border:2px solid #ffd54a;
+    border-radius:30px;padding:10px 22px;color:#fff;box-shadow:0 8px 28px rgba(0,0,0,0.65);
+    pointer-events:none;transition:transform .4s cubic-bezier(0.18,0.89,0.32,1.28),opacity .3s;opacity:0}
+  #achToastIcon{font-size:28px}
+
   /* ====================== 👗 換裝衣櫃 ====================== */
   #wardOverlay{position:fixed;inset:0;z-index:85;display:none;align-items:center;justify-content:center;
     background:rgba(6,14,28,0.6)}
@@ -249,6 +284,10 @@
   </div>
   <div id="menuPage1">
     <button id="page1Start">開始遊戲</button>
+        <button id="achBtn" style="display:block;width:100%;margin:4px 0;border:2px solid #3c6e91;border-radius:14px;
+      padding:8px 4px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:2px;
+      font-family:'YanKaiTC','DFKai-SB','Kaiti TC','STKaiti','Noto Serif TC',serif;
+      background:linear-gradient(180deg,#dbeefa,#b8ddf5);color:#1c4a6b">🏆 榮譽成就</button>
     <button id="ownLabel" style="display:block;width:100%;margin:8px 0 4px;border:2px solid #b0543e;border-radius:14px;
       padding:8px 4px;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:2px;
       font-family:'YanKaiTC','DFKai-SB','Kaiti TC','STKaiti','Noto Serif TC',serif;
@@ -265,6 +304,25 @@
 
 <!-- ====================== 💔 戰敗選擇層 ====================== -->
 <button id="wardBtn">👗 換裝</button>
+
+<!-- ====================== 🏆 榮譽成就層 ====================== -->
+<div id="achOverlay">
+  <div id="achCard">
+    <h2>🏆 榮譽成就勳章</h2>
+    <p id="achSummary">已解鎖 0 / 14 勳章</p>
+    <div id="achList"></div>
+    <button id="achClose">關閉</button>
+  </div>
+</div>
+
+<div id="achToast">
+  <span id="achToastIcon">🏆</span>
+  <div>
+    <div style="font-size:11px;color:#ffd54a;font-weight:700;letter-spacing:1px">成就解鎖！ACHIEVEMENT UNLOCKED</div>
+    <div id="achToastTitle" style="font-size:15px;font-weight:800;color:#fff">成就名稱</div>
+  </div>
+</div>
+
 <div id="wardOverlay">
   <div id="wardCard">
     <h2>👗 小紅帽的衣櫃</h2>
@@ -295,6 +353,13 @@
 <script src="q-bible.js"></script>
 <script>
 'use strict';
+
+/* ====================== PWA 離線緩存支援 ====================== */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
 
 /* ====================== 畫布與縮放 ====================== */
 const canvas = document.getElementById('game');
@@ -737,6 +802,561 @@ const REVELATION_QS = [
     explain:'「口渴的人也當來，願意的都可以白白取生命的水喝」（啟 22:17）。' }
 ];
 
+/* ====================== 聖經深造題庫（巨蝠馴服 & 神盾考驗，10 題精選） ====================== */
+const TOUGH_BIBLE_QS = [
+  { scene:'聖經深造·麥基洗德', q:'《希伯來書》記載，至高神的祭司麥基洗德具備何種特殊特徵，預表耶穌基督？',
+    opts:['無父無母、無族譜、無生之始無命之終','大衛王的長子與猶大支派族長','在西奈山領受法版的先知','耶路撒冷第一座聖殿的總建築師'], correct:0,
+    explain:'希伯來書 7:3 記載麥基洗德「無父、無母、無族譜、無生之始、無命之終，乃與神的兒子相似，常為祭司。」' },
+  { scene:'聖經深造·挪亞方舟', q:'創世記中神指示挪亞建造方舟的長、寬、高尺寸比例為何？',
+    opts:['長三百肘、寬五十肘、高三十肘','長五百肘、寬一百肘、高五十肘','長一百肘、寬三十肘、高二十肘','長二百肘、寬四十肘、高二十肘'], correct:0,
+    explain:'創世記 6:15：「方舟的造法乃是這樣：要長三百肘，寬五十肘，高三十肘。」' },
+  { scene:'聖經深造·摩西銅蛇', q:'約翰福音 3:14 提到「摩西在曠野怎樣舉蛇，人子也必照樣怎樣被舉起來」，是指何事？',
+    opts:['預表耶穌基督被釘在十字架上受死拯救信祂的人','預表擊敗埃及法老的十災神蹟','預表約櫃進入迦南美地','預表以色列人在曠野得到嗎哪'], correct:0,
+    explain:'民數記 21 章銅蛇事件預表基督在十字架上為世人擔當罪孽，凡仰望祂的必得永生（約 3:14-15）。' },
+  { scene:'聖經深造·啟示錄四活物', q:'《啟示錄》第 4 章中，在神寶座周圍的四個活物分別像什麼？',
+    opts:['獅子、牛、人、飛鷹','狼、羊、鴿子、駱駝','龍、豹、熊、公雞','天使、先知、君王、大祭司'], correct:0,
+    explain:'啟示錄 4:7：「第一個活物像獅子，第二個像牛犢，第三個臉面像人，第四個像飛鷹。」' },
+  { scene:'聖經深造·聖靈九果', q:'《加拉太書》5:22-23 所列的聖靈所結的果子，不包含以下哪一項？',
+    opts:['財富與權力','仁愛與喜樂','和平與忍耐','溫柔與節制'], correct:0,
+    explain:'聖靈所結的果子乃是：仁愛、喜樂、和平、忍耐、恩慈、良善、信實、溫柔、節制。' },
+  { scene:'聖經深造·啟示錄新名', q:'《啟示錄》寫給別迦摩教會，得勝的必賜給他白石，石上刻著什麼？',
+    opts:['除了領受的以外沒有人能認識的新名','耶穌受難的日期','十二門徒的名字','七教會的印記'], correct:0,
+    explain:'啟示錄 2:17：「並賜他一塊白石，石上寫著新名；除了那領受的以外，沒有人能認識。」' },
+  { scene:'聖經深造·大祭司胸牌', q:'出埃及記記載，大祭司進入聖所時所佩戴的胸牌上鑲嵌了多少顆寶石？代表什麼？',
+    opts:['十二顆寶石，代表以色列十二支派','七顆寶石，代表七個節期','十顆寶石，代表十條誡命','四十顆寶石，代表曠野四十年'], correct:0,
+    explain:'出埃及記 28:21：「這些石頭都要按著以色列十二個兒子的名字，一個一個刻上支派的名字。」' },
+  { scene:'聖經深造·登山寶訓', q:'馬太福音第 5 章「八福」中的第一福是什麼？',
+    opts:['虛心的人有福了！因為天國是他們的','清心的人有福了！因為他們必得見神','溫柔的人有福了！因為他們必承受地土','哀慟的人有福了！因為他們必得安慰'], correct:0,
+    explain:'馬太福音 5:3：「虛心的人有福了！因為天國是他們的。」' },
+  { scene:'聖經深造·聖經之最', q:'聖經中最長的一卷書是《詩篇》，其中篇幅最長的是哪一篇？共有幾節？',
+    opts:['第 119 篇，共有 176 節','第 23 篇，共有 6 節','第 90 篇，共有 17 節','第 150 篇，共有 6 節'], correct:0,
+    explain:'詩篇第 119 篇是全本聖經中最長的一章，以 22 個希伯來字母分段，共 176 節。' },
+  { scene:'聖經深造·七印七號七碗', q:'啟示錄中記載羔羊揭開第七印、天使吹響第七號、倒完第七碗後，神宣告了什麼話？',
+    opts:['成了！','結束了！','審判完了！','看哪！'], correct:0,
+    explain:'啟示錄 16:17：「第七位天使把碗倒在空中，就有大聲音從殿中的寶座上出來，說：成了！」' }
+];
+
+/* ====================== 🏆 榮譽成就清單 ====================== */
+const ACHIEVEMENTS = [
+  { id: 'forest_clear', icon: '🌲', title: '森林探險家', desc: '通過第 1 關森林數學考驗' },
+  { id: 'mountain_clear', icon: '⛰️', title: '國語秀才', desc: '通過第 2 關山地國語考驗' },
+  { id: 'desert_clear', icon: '🏜️', title: '音樂達人', desc: '通過第 3 關沙漠音樂考驗' },
+  { id: 'seaside_clear', icon: '🌊', title: '英語精靈', desc: '通過第 4 關海邊英文考驗' },
+  { id: 'palace_clear', icon: '🐉', title: '聖經勇士', desc: '通過第 5 關宮殿聖經考驗' },
+  { id: 'dungeon_enter', icon: '🕳️', title: '幽暗地牢探索者', desc: '在第 5 關第二深谷發現地下城' },
+  { id: 'big_bat_tamed', icon: '🦇', title: '巨蝠馴獸師', desc: '擊退並馴服地牢巨型大蝙蝠' },
+  { id: 'shield_get', icon: '🛡️', title: '聖光神盾使', desc: '取得能反彈九頭巨龍烈火的神盾' },
+  { id: 'hydra_defeat', icon: '🐲', title: '九頭龍終結者', desc: '擊碎九頭巨龍並投入火湖' },
+  { id: 'cross_get', icon: '✝️', title: '啟示錄先知', desc: '在宮殿高空雲端獲得金色十字架' },
+  { id: 'jerusalem_end', icon: '🏰', title: '新天新地朝聖者', desc: '達成隱藏結局，迎接新耶路撒冷' },
+  { id: 'perfect_quiz', icon: '💯', title: '滿分學者', desc: '單關問答達到 100% 正確率' },
+  { id: 'costume_master', icon: '👗', title: '換裝達人', desc: '解鎖收集全部 4 套精美套裝' },
+  { id: 'all_mounts', icon: '🏇', title: '皇家騎手', desc: '成功馴服並騎乘任何一種魔物座駕' }
+];
+
+let unlockedAchs = [];
+try {
+  const a = JSON.parse(localStorage.getItem('rrh_achievements'));
+  if (Array.isArray(a)) unlockedAchs = a;
+} catch (e) {}
+
+function unlockAchievement(id) {
+  if (unlockedAchs.includes(id)) return;
+  unlockedAchs.push(id);
+  try { localStorage.setItem('rrh_achievements', JSON.stringify(unlockedAchs)); } catch (e) {}
+  const ach = ACHIEVEMENTS.find(x => x.id === id);
+  if (ach) toastAchievement(ach);
+}
+
+function toastAchievement(ach) {
+  const t = document.getElementById('achToast');
+  if (!t) return;
+  document.getElementById('achToastIcon').textContent = ach.icon;
+  document.getElementById('achToastTitle').textContent = ach.title;
+  t.style.opacity = '1';
+  t.style.transform = 'translateX(-50%) translateY(0px)';
+  if (typeof BGM !== 'undefined' && BGM.sfx) BGM.sfx('key');
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(-100px)';
+  }, 3200);
+}
+
+function renderAchievements() {
+  const list = document.getElementById('achList');
+  const summary = document.getElementById('achSummary');
+  if (!list || !summary) return;
+  summary.textContent = `已解鎖 ${unlockedAchs.length} / ${ACHIEVEMENTS.length} 榮譽勳章`;
+  list.innerHTML = '';
+  ACHIEVEMENTS.forEach(ach => {
+    const unl = unlockedAchs.includes(ach.id);
+    const item = document.createElement('div');
+    item.className = 'achItem' + (unl ? ' unl' : '');
+    item.innerHTML = `
+      <div class="achIcon">${ach.icon}</div>
+      <div class="achInfo">
+        <div class="achTitle">${ach.title} ${unl ? '<span class="achTag">✓ 已獲得</span>' : '<span class="achLock">🔒 未解鎖</span>'}</div>
+        <div class="achDesc">${ach.desc}</div>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+
+/* ====================== 🕳️ 第五關秘密地下城與半 Boss 系統 ====================== */
+const dungeon = {
+  active: false,
+  w: 2600,
+  h: 640,
+  groundY: 490,
+  platforms: [],
+  coins: [],
+  lavaTraps: [],
+  spikeTraps: [],
+  bigBat: null,
+  shieldCollected: false,
+  ascentReady: false,
+  exitX: 2450
+};
+
+function initDungeonLevel() {
+  dungeon.platforms = [];
+  dungeon.coins = [];
+  dungeon.lavaTraps = [];
+  dungeon.spikeTraps = [];
+
+  // 1. 地面與熔岩坑
+  dungeon.platforms.push({ x: 0, y: dungeon.groundY, w: 460, h: 200, kind: 'dungeon_ground' });
+  dungeon.platforms.push({ x: 190, y: 390, w: 110, h: 22, kind: 'dungeon_plat' });
+  dungeon.platforms.push({ x: 340, y: 310, w: 100, h: 22, kind: 'dungeon_plat' });
+  dungeon.platforms.push({ x: 500, y: 400, w: 90, h: 22, kind: 'dungeon_plat' });
+  dungeon.platforms.push({ x: 630, y: 320, w: 95, h: 22, kind: 'dungeon_plat' });
+
+  dungeon.platforms.push({ x: 760, y: dungeon.groundY, w: 600, h: 200, kind: 'dungeon_ground' });
+  dungeon.platforms.push({ x: 860, y: 380, w: 110, h: 22, kind: 'dungeon_plat' });
+  dungeon.platforms.push({ x: 1020, y: 300, w: 120, h: 22, kind: 'dungeon_plat' });
+  dungeon.platforms.push({ x: 1200, y: 380, w: 110, h: 22, kind: 'dungeon_plat' });
+
+  dungeon.platforms.push({ x: 1410, y: 400, w: 90, h: 22, kind: 'dungeon_plat' });
+  dungeon.platforms.push({ x: 1530, y: 310, w: 90, h: 22, kind: 'dungeon_plat' });
+
+  dungeon.platforms.push({ x: 1640, y: dungeon.groundY, w: 960, h: 200, kind: 'dungeon_ground' });
+  dungeon.platforms.push({ x: 1760, y: 390, w: 120, h: 22, kind: 'dungeon_plat' });
+  dungeon.platforms.push({ x: 1960, y: 300, w: 140, h: 22, kind: 'dungeon_plat' });
+  dungeon.platforms.push({ x: 2160, y: 390, w: 120, h: 22, kind: 'dungeon_plat' });
+
+  dungeon.platforms.push({ x: 2360, y: 400, w: 110, h: 22, kind: 'dungeon_plat' });
+  dungeon.platforms.push({ x: 2420, y: 280, w: 100, h: 22, kind: 'dungeon_plat' });
+  dungeon.platforms.push({ x: 2380, y: 160, w: 100, h: 22, kind: 'dungeon_plat' });
+
+  // 2. 地牢豐富金幣
+  const coinPos = [
+    [100, 440], [140, 440], [210, 350], [250, 350], [360, 270], [400, 270],
+    [520, 360], [560, 360], [650, 280], [690, 280],
+    [800, 440], [840, 440], [880, 440], [900, 340], [940, 340], [1050, 260], [1090, 260],
+    [1130, 260], [1230, 340], [1270, 340], [1430, 360], [1550, 270],
+    [1700, 440], [1740, 440], [1800, 350], [1840, 350], [1980, 260], [2020, 260],
+    [2060, 260], [2180, 350], [2220, 350], [2300, 440], [2380, 360], [2440, 240], [2400, 120]
+  ];
+  for (const [cx, cy] of coinPos) {
+    dungeon.coins.push({ x: cx, y: cy, phase: Math.random() * 6.28, got: false });
+  }
+
+  // 3. 跳躍岩漿陷阱
+  dungeon.lavaTraps = [
+    { x: 550, timer: 0.3, interval: 2.1, py: dungeon.groundY, vy: 0, active: false },
+    { x: 680, timer: 1.4, interval: 2.4, py: dungeon.groundY, vy: 0, active: false },
+    { x: 1470, timer: 0.8, interval: 2.2, py: dungeon.groundY, vy: 0, active: false }
+  ];
+
+  // 4. 下刺陷阱
+  dungeon.spikeTraps = [
+    { x: 270, y: 70, homeY: 70, state: 'idle', shakeT: 0, vy: 0, w: 26, h: 54 },
+    { x: 910, y: 70, homeY: 70, state: 'idle', shakeT: 0, vy: 0, w: 26, h: 54 },
+    { x: 1150, y: 70, homeY: 70, state: 'idle', shakeT: 0, vy: 0, w: 26, h: 54 },
+    { x: 1850, y: 70, homeY: 70, state: 'idle', shakeT: 0, vy: 0, w: 26, h: 54 }
+  ];
+
+  // 5. 半 Boss：巨型大蝙蝠 (Big Bat, 5 顆心)
+  dungeon.bigBat = {
+    x: 1960, y: 260, w: 76, h: 52,
+    vx: -130, vy: 0,
+    hearts: 5, maxHearts: 5,
+    state: 'patrol',
+    anim: 0, hurtT: 0, tamed: false, cool: 0, dir: -1,
+    isBigBat: true, flying: true,
+    cfg: { beast: 'bigbat', beastName: '洞穴巨蝠', emoji: '🦇', subject: '聖經深造' }
+  };
+}
+
+function enterDungeon() {
+  dungeon.active = true;
+  initDungeonLevel();
+  player.x = 80;
+  player.y = dungeon.groundY - player.h - 10;
+  player.vx = 0;
+  player.vy = 100;
+  player.onGround = true;
+  unlockAchievement('dungeon_enter');
+  spawnRing(player.x, player.y, '#9c27b0');
+  spawnRing(player.x, player.y, '#ffd54a');
+  if (typeof BGM !== 'undefined' && BGM.sfx) BGM.sfx('start');
+  toastAchievement({ icon: '🕳️', title: '發現幽暗地牢！尋找聖光神盾！' });
+}
+
+function exitDungeon() {
+  dungeon.active = false;
+  player.x = 2360;
+  player.y = GROUND_Y - 60;
+  player.vy = -340;
+  player.onGround = false;
+  if (player.mount && player.mount.isBigBat) {
+    player.mount.x = player.x;
+    player.mount.y = player.y;
+  }
+  spawnRing(player.x, player.y, '#ffd54a');
+  spawnDust(player.x, player.y, 20, '#fff3b0');
+  if (typeof BGM !== 'undefined' && BGM.sfx) BGM.sfx('key');
+  toastAchievement({ icon: '🛡️', title: '帶著神盾重返王宮！準備擊潰九頭巨龍！' });
+}
+
+function updateDungeon(dt) {
+  if (!dungeon.active) return;
+
+  // 1. 更新跳躍岩漿
+  for (const lv of dungeon.lavaTraps) {
+    lv.timer += dt;
+    if (!lv.active && lv.timer >= lv.interval) {
+      lv.active = true;
+      lv.py = dungeon.groundY;
+      lv.vy = -490;
+      if (typeof BGM !== 'undefined' && BGM.sfx) BGM.sfx('throw');
+    }
+    if (lv.active) {
+      lv.vy += 880 * dt;
+      lv.py += lv.vy * dt;
+      if (Math.random() < 0.6) {
+        particles.push({
+          x: lv.x + (Math.random()-0.5)*16, y: lv.py + 4,
+          vx: (Math.random()-0.5)*50, vy: -20 - Math.random()*30,
+          life: 0.3, maxLife: 0.3, r: 2.5 + Math.random()*2, color: '#ff6b35'
+        });
+      }
+      if (lv.py >= dungeon.groundY) {
+        lv.active = false;
+        lv.timer = 0;
+        spawnDust(lv.x, dungeon.groundY, 8, '#ff4500');
+      }
+      const lbox = { x: lv.x - 14, y: lv.py - 14, w: 28, h: 28 };
+      if (overlap(player, lbox) && player.hurtTimer <= 0) {
+        hurtPlayer(false, lv.x);
+      }
+    }
+  }
+
+  // 2. 更新懸垂下刺
+  for (const s of dungeon.spikeTraps) {
+    if (s.state === 'idle') {
+      const pcx = player.x + player.w / 2;
+      if (Math.abs(pcx - s.x) < 68 && player.y > s.y) {
+        s.state = 'shake';
+        s.shakeT = 0.38;
+      }
+    } else if (s.state === 'shake') {
+      s.shakeT -= dt;
+      if (Math.random() < 0.5) spawnDust(s.x, s.y + s.h, 1, '#888');
+      if (s.shakeT <= 0) {
+        s.state = 'drop';
+        s.vy = 760;
+        if (typeof BGM !== 'undefined' && BGM.sfx) BGM.sfx('swing');
+      }
+    } else if (s.state === 'drop') {
+      s.y += s.vy * dt;
+      if (s.y + s.h >= dungeon.groundY) {
+        s.y = dungeon.groundY - s.h;
+        s.state = 'stuck';
+        s.stuckT = 1.1;
+        spawnDust(s.x, dungeon.groundY, 10, '#b8a080');
+        if (typeof BGM !== 'undefined' && BGM.sfx) BGM.sfx('stomp');
+      }
+      const sbox = { x: s.x - s.w/2, y: s.y, w: s.w, h: s.h };
+      if (overlap(player, sbox) && player.hurtTimer <= 0) {
+        hurtPlayer(false, s.x);
+      }
+    } else if (s.state === 'stuck') {
+      s.stuckT -= dt;
+      if (s.stuckT <= 0) s.state = 'retract';
+    } else if (s.state === 'retract') {
+      s.y -= 110 * dt;
+      if (s.y <= s.homeY) {
+        s.y = s.homeY;
+        s.state = 'idle';
+      }
+    }
+  }
+
+  // 3. 更新巨型大蝙蝠
+  const bb = dungeon.bigBat;
+  if (bb) {
+    bb.anim += dt;
+    if (bb.hurtT > 0) bb.hurtT -= dt;
+    if (bb.state === 'patrol') {
+      bb.x += bb.dir * 135 * dt;
+      bb.y = 260 + Math.sin(bb.anim * 2.8) * 65;
+      if (bb.x < 1720) { bb.x = 1720; bb.dir = 1; }
+      if (bb.x > 2280) { bb.x = 2280; bb.dir = -1; }
+      const pcx = player.x + player.w / 2;
+      if (player.x > 1650 && Math.abs(pcx - (bb.x + bb.w/2)) < 160) {
+        bb.y += Math.sin(bb.anim * 5) * 30 * dt;
+      }
+      if (overlap(player, { x: bb.x, y: bb.y, w: bb.w, h: bb.h }) && player.hurtTimer <= 0 && player.ridingOn !== bb && !player.mount) {
+        hurtPlayer(false, bb.x + bb.w / 2);
+      }
+    } else if (bb.state === 'crazy') {
+      bb.x = 2000 + Math.sin(time * 2.4) * 270;
+      bb.y = 250 + Math.sin(time * 4.8) * 115;
+      bb.dir = Math.cos(time * 2.4) >= 0 ? 1 : -1;
+      if (Math.random() < 0.6) {
+        particles.push({
+          x: bb.x + bb.w/2 + (Math.random()-0.5)*40, y: bb.y + bb.h/2 + (Math.random()-0.5)*30,
+          vx: (Math.random()-0.5)*60, vy: -20 - Math.random()*30,
+          life: 0.35, maxLife: 0.35, r: 3, color: '#ff1744'
+        });
+      }
+      // 跳上後背判定
+      if (!player.mount && player.vy >= 0 &&
+          player.x + player.w > bb.x - 12 && player.x < bb.x + bb.w + 12 &&
+          player.y + player.h >= bb.y - 14 && player.y + player.h <= bb.y + 26) {
+        player.onGround = true;
+        player.y = bb.y - player.h;
+        player.vy = 0;
+        player.ridingOn = bb;
+      }
+    }
+  }
+
+  // 4. 地牢金幣收集
+  for (const c of dungeon.coins) {
+    if (c.got) continue;
+    c.phase += dt * 4;
+    if (overlap(player, { x: c.x - 12, y: c.y - 12, w: 24, h: 24 })) {
+      c.got = true;
+      coinCount++;
+      score += 20;
+      if (typeof BGM !== 'undefined' && BGM.sfx) BGM.sfx('coin');
+      spawnRing(c.x, c.y, '#ffd54a');
+      spawnDust(c.x, c.y, 6, '#fff0a0');
+    }
+  }
+
+  // 5. 飛回王宮天梯檢測
+  if (player.x >= 2380 && player.y <= 120) {
+    exitDungeon();
+  }
+}
+
+function drawDungeon(ctx) {
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, dungeon.h);
+  bgGrad.addColorStop(0, '#060a14');
+  bgGrad.addColorStop(0.6, '#120f20');
+  bgGrad.addColorStop(1, '#24101b');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(cam.x - 50, 0, W / scale + 100, dungeon.h + 100);
+
+  ctx.fillStyle = '#0f1422';
+  ctx.beginPath();
+  ctx.moveTo(cam.x - 50, 0);
+  for (let x = cam.x - 50; x <= cam.x + W / scale + 50; x += 60) {
+    const spikeH = 25 + Math.sin(x * 0.05) * 15 + Math.cos(x * 0.12) * 10;
+    ctx.lineTo(x, spikeH);
+  }
+  ctx.lineTo(cam.x + W / scale + 50, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  for (const p of dungeon.platforms) {
+    if (p.x + p.w < cam.x - 100 || p.x > cam.x + W / scale + 100) continue;
+    if (p.kind === 'dungeon_ground') {
+      ctx.fillStyle = '#1c1b26';
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+      ctx.fillStyle = '#2f2d3d';
+      ctx.fillRect(p.x, p.y, p.w, 8);
+      ctx.strokeStyle = '#4e4b63';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y + 1); ctx.lineTo(p.x + p.w, p.y + 1); ctx.stroke();
+    } else {
+      ctx.fillStyle = '#2d2b3b';
+      roundRect(p.x, p.y, p.w, p.h, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#7c59a4';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(180,130,240,0.6)';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('✧ ✦ ✧', p.x + p.w / 2, p.y + 15);
+    }
+  }
+
+  for (const [lx, lw] of [[460, 300], [1360, 280]]) {
+    const lavaGrad = ctx.createLinearGradient(0, dungeon.groundY + 10, 0, dungeon.groundY + 80);
+    lavaGrad.addColorStop(0, '#ff5722');
+    lavaGrad.addColorStop(0.5, '#e64a19');
+    lavaGrad.addColorStop(1, '#bf360c');
+    ctx.fillStyle = lavaGrad;
+    ctx.fillRect(lx, dungeon.groundY + 8, lw, 120);
+    ctx.fillStyle = '#ffb74d';
+    for (let bx = lx + 10; bx < lx + lw - 10; bx += 32) {
+      const by = dungeon.groundY + 8 + Math.sin(time * 4 + bx) * 3;
+      ctx.beginPath(); ctx.arc(bx, by, 3 + Math.sin(time * 3 + bx) * 2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  for (const lv of dungeon.lavaTraps) {
+    if (!lv.active) continue;
+    ctx.save();
+    ctx.shadowColor = '#ff5722';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = '#ff7043';
+    ctx.beginPath(); ctx.arc(lv.x, lv.py, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffe082';
+    ctx.beginPath(); ctx.arc(lv.x, lv.py, 7, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  for (const s of dungeon.spikeTraps) {
+    ctx.save();
+    let sx = s.x;
+    if (s.state === 'shake') sx += (Math.random() - 0.5) * 5;
+    ctx.fillStyle = '#3a3848';
+    ctx.beginPath();
+    ctx.moveTo(sx - s.w / 2, s.y);
+    ctx.lineTo(sx + s.w / 2, s.y);
+    ctx.lineTo(sx, s.y + s.h);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#625f75';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  for (const c of dungeon.coins) {
+    if (c.got) continue;
+    if (c.x < cam.x - 50 || c.x > cam.x + W / scale + 50) continue;
+    drawCoin(c);
+  }
+
+  const bb = dungeon.bigBat;
+  if (bb) {
+    ctx.save();
+    const cx = bb.x + bb.w / 2, cy = bb.y + bb.h / 2;
+    const flap = Math.sin(bb.anim * (bb.state === 'crazy' ? 22 : 13));
+    ctx.translate(cx, cy);
+    ctx.scale(bb.dir, 1);
+    if (bb.hurtT > 0) ctx.filter = 'brightness(2.2)';
+
+    ctx.fillStyle = bb.state === 'crazy' ? '#4a1525' : '#261730';
+    ctx.strokeStyle = bb.state === 'crazy' ? '#ff1744' : '#4a2f5c';
+    ctx.lineWidth = 2.5;
+
+    ctx.beginPath();
+    ctx.moveTo(-10, -5);
+    ctx.quadraticCurveTo(-40, -45 - flap * 26, -65, -15 - flap * 18);
+    ctx.quadraticCurveTo(-45, 10, -10, 8);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(10, -5);
+    ctx.quadraticCurveTo(40, -45 - flap * 26, 65, -15 - flap * 18);
+    ctx.quadraticCurveTo(45, 10, 10, 8);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = bb.state === 'crazy' ? '#380e1c' : '#1e1326';
+    ctx.beginPath(); ctx.ellipse(0, 0, 18, 22, 0, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#2e1938';
+    ctx.beginPath(); ctx.moveTo(-12, -18); ctx.lineTo(-16, -34); ctx.lineTo(-6, -20); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(6, -20); ctx.lineTo(16, -34); ctx.lineTo(12, -18); ctx.fill();
+
+    ctx.fillStyle = bb.tamed ? '#00e676' : (bb.state === 'crazy' ? '#ff1744' : '#ffea00');
+    ctx.beginPath(); ctx.arc(-6, -6, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6, -6, 3.5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.moveTo(-4, 6); ctx.lineTo(-2, 13); ctx.lineTo(0, 6); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0, 6); ctx.lineTo(2, 13); ctx.lineTo(4, 6); ctx.fill();
+
+    if (bb.tamed) {
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.moveTo(-10, -22); ctx.lineTo(-12, -32); ctx.lineTo(-5, -26);
+      ctx.lineTo(0, -34); ctx.lineTo(5, -26); ctx.lineTo(12, -32); ctx.lineTo(10, -22);
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+
+    if (!bb.tamed) {
+      ctx.save();
+      const barX = cx - 55, barY = bb.y - 32;
+      ctx.fillStyle = 'rgba(12,8,20,0.82)';
+      roundRect(barX, barY - 14, 110, 32, 8);
+      ctx.fill();
+      ctx.strokeStyle = bb.state === 'crazy' ? '#ff1744' : '#7c59a4';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.fillStyle = bb.state === 'crazy' ? '#ff8da1' : '#f0e6ff';
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(bb.state === 'crazy' ? '⚡ 暴怒中！跳上後背馴服！' : '🦇 洞穴巨蝠（半Boss）', cx, barY - 2);
+
+      for (let k = 0; k < 5; k++) {
+        const hx = barX + 10 + k * 19;
+        ctx.font = '13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(k < bb.hearts ? '❤️' : '🖤', hx, barY + 12);
+      }
+      ctx.restore();
+    }
+  }
+
+  // 8. 飛回王宮天梯聖光出口
+  ctx.save();
+  const shaftGrad = ctx.createLinearGradient(2450, 0, 2450, dungeon.groundY);
+  shaftGrad.addColorStop(0, 'rgba(255,235,160,0.85)');
+  shaftGrad.addColorStop(0.4, 'rgba(255,215,74,0.45)');
+  shaftGrad.addColorStop(1, 'rgba(255,215,74,0.05)');
+  ctx.fillStyle = shaftGrad;
+  ctx.fillRect(2380, 0, 140, dungeon.groundY);
+
+  ctx.strokeStyle = 'rgba(255,245,200,0.6)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(2380, 0); ctx.lineTo(2380, dungeon.groundY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(2520, 0); ctx.lineTo(2520, dungeon.groundY); ctx.stroke();
+
+  if (Math.random() < 0.6) {
+    particles.push({
+      x: 2390 + Math.random() * 120, y: dungeon.groundY - Math.random() * 200,
+      vx: (Math.random()-0.5)*20, vy: -60 - Math.random()*80,
+      life: 0.8, maxLife: 0.8, r: 2.5, color: '#fff9c4'
+    });
+  }
+
+  ctx.fillStyle = '#ffe082';
+  ctx.font = 'bold 15px "YanKaiTC","Noto Serif TC",serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('↑ 聖光天梯 · 飛回王宮', 2450, 60);
+  ctx.font = '12px system-ui, sans-serif';
+  ctx.fillText('（乘巨蝠或跳躍飛上出口）', 2450, 82);
+  ctx.restore();
+}
+
+
+
 /* ====================== 關卡建構 ====================== */
 function buildLevel() {
   if (keyItems.length) { keyCount += keyItems.length; }   // 重生/換關前，飛行中的鑰匙先入帳
@@ -851,13 +1471,12 @@ function buildLevel() {
   ];
   /* 🌺🐝🦇🐸🐍 各關小妖：食人花/蜜蜂/蝙蝠/青蛙/蛇 */
   const ENEMY_KINDS = ['piranha', 'bee', 'bat', 'frog', 'snake'];
-  const ekind = ENEMY_KINDS[stage - 1];
-  const ESIZE = { piranha:[32,44], bee:[40,30], bat:[38,26], frog:[30,24], snake:[46,20] };
+  const ESIZE = { piranha:[32,44], bee:[26,20], bat:[38,26], frog:[30,24], snake:[46,20] };
   for (const [x, minX, maxX] of enemyDefs) {
     const [ew, eh] = ESIZE[ekind];
     enemies.push({
       kind: ekind,
-      x, y: ekind === 'bat' ? GROUND_Y - 46 : (ekind === 'bee' ? GROUND_Y - 90 : GROUND_Y - eh), w: ew, h: eh,
+      x, y: ekind === 'bat' ? GROUND_Y - 46 : (ekind === 'bee' ? GROUND_Y - 80 : GROUND_Y - eh), w: ew, h: eh,
       startX: x, minX, maxX,
       dir: 1, dead: false, deadT: 0, anim: Math.random()*6,
       tongueT: 1 + Math.random() * 2.5,   // 🌺 吐舌計時
@@ -873,6 +1492,8 @@ function buildLevel() {
   snakeShots = [];
   player.holdingHydra = false;
   if (stage === 5) {
+    initDungeonLevel();
+    dungeon.active = false;
     hydra = {
       x: 4860,                       // 龍身左緣（旗在 5400，雲端十字架在 4680 不受阻擋）
       alive: true, lying: false, grabbed: false, thrown: false, gone: false,
@@ -1182,7 +1803,12 @@ try {
 player.costume = wardrobe.eq;
 player.maxJumps = (player.costume === 'tang') ? 7 : 6;
 player.jumpsLeft = player.maxJumps;
-function saveWard() { try { localStorage.setItem('lrrh_ward', JSON.stringify(wardrobe)); } catch (e) {} }
+function saveWard() {
+  try {
+    localStorage.setItem('lrrh_ward', JSON.stringify(wardrobe));
+    if (wardrobe.owned && wardrobe.owned.length >= 4) unlockAchievement('costume_master');
+  } catch (e) {}
+}
 
 const wardOverlay = document.getElementById('wardOverlay');
 const wardBtn = document.getElementById('wardBtn');
@@ -1252,6 +1878,13 @@ function renderOwnRow() {
 wardBtn.addEventListener('click', () => { BGM.sfx('click'); renderWard(); wardOverlay.classList.add('show'); });
 document.getElementById('ownLabel').addEventListener('click', () => { BGM.sfx('click'); renderWard(); wardOverlay.classList.add('show'); });
 document.getElementById('wardClose').addEventListener('click', () => { BGM.sfx('click'); wardOverlay.classList.remove('show'); });
+
+const achOverlay = document.getElementById('achOverlay');
+const achBtn = document.getElementById('achBtn');
+const achClose = document.getElementById('achClose');
+if (achBtn) achBtn.addEventListener('click', () => { renderAchievements(); achOverlay.classList.add('show'); });
+if (achClose) achClose.addEventListener('click', () => { achOverlay.classList.remove('show'); });
+
 renderOwnRow();               // 首頁初次載入即顯示已獲得套裝
 
 /* ====================== 開始 / 重生 ====================== */
@@ -1260,6 +1893,7 @@ function startGame() {
   lives = 3;
   coinCount = 0;
   keyCount = 0;
+  player.hasShield = false;
   stage = startStage;
   failReason = '';
   stageStats = { asked:0, correct:0, wrong:0 };
@@ -1271,6 +1905,7 @@ function startGame() {
 }
 
 function respawn() {
+  dungeon.active = false;
   let cx = checkpoints[0];
   for (const c of checkpoints) if (player.x >= c) cx = c;
 
@@ -1365,7 +2000,8 @@ window.addEventListener('keyup', e => { keys[e.code] = false; });
 /* ====================== 物理 ====================== */
 function moveX(ent, dt) {
   ent.x += ent.vx * dt;
-  for (const p of platforms) {
+  const currPlats = (dungeon && dungeon.active) ? dungeon.platforms : platforms;
+  for (const p of currPlats) {
     if (overlap(ent, p)) {
       if (ent.vx > 0)      ent.x = p.x - ent.w;
       else if (ent.vx < 0) ent.x = p.x + p.w;
@@ -1379,7 +2015,8 @@ function moveY(ent, dt) {
   ent.y += ent.vy * dt;
   const wasAir = !ent.onGround;
   ent.onGround = false;
-  for (const p of platforms) {
+  const currPlats = (dungeon && dungeon.active) ? dungeon.platforms : platforms;
+  for (const p of currPlats) {
     if (overlap(ent, p)) {
       if (ent.vy > 0) {
         ent.y = p.y - ent.h;
@@ -1454,10 +2091,10 @@ function updatePlayer(dt) {
     const m = player.mount, bk = m.cfg.beast, mcx = m.x + m.w/2;
     player.atkLock = wantAtk;
     if (bk === 'dragon') {
-      // 🔥 龍：噴出火球（長射程）
+      // 🔥 龍：噴出火球（長射程，稍微偏下瞄準地面上的小怪/蛇）
       player.atkCD = 0.5;
-      const fy = m.y + 6;
-      shots.push({ x: mcx + m.dir * 46, y: fy, vx: m.dir * 560, r: 10, life: 2.4 });
+      const fy = m.y + 18;
+      shots.push({ x: mcx + m.dir * 46, y: fy, vx: m.dir * 560, vy: 16, r: 12, life: 2.4 });
       m.animT += 0.5;
       BGM.sfx('throw');
       spawnDust(mcx + m.dir * 46, fy, 6, '#ff9a3d');
@@ -1597,8 +2234,21 @@ function updatePlayer(dt) {
     player.animT *= 0.9;
   }
 
-  /* --- 掉進坑洞 --- */
-  if (player.y > GROUND_Y + 260) hurtPlayer(true);
+  /* --- 掉進坑洞（第5關第二深谷進入秘密地下城） --- */
+  if (stage === 5 && !dungeon.active && player.x >= 2180 && player.x <= 2360 && player.y > GROUND_Y + 110) {
+    enterDungeon();
+    return;
+  }
+  if (dungeon.active) {
+    if (player.y > dungeon.groundY + 120) {
+      hurtPlayer(false);
+      player.x = 80;
+      player.y = dungeon.groundY - player.h - 10;
+      player.vx = 0; player.vy = 0;
+    }
+  } else if (player.y > GROUND_Y + 260) {
+    hurtPlayer(true);
+  }
 }
 
 /* 🏇 答對馴服考驗：掉出鑰匙＋成為座駕 */
@@ -1609,6 +2259,7 @@ function grantTame(b) {
     spawnRing(b.x + b.w/2, b.y + b.h/2, '#ffe27a');
   }
   score += 150;
+  unlockAchievement('all_mounts');
   tameBeast(b);
 }
 
@@ -1662,11 +2313,14 @@ function updateMountRide(dt) {
     mountStrike(b, { x: b.x - 16, y: b.y - 30, w: b.w + 32, h: b.h + 50 });
     if (Math.random() < 0.6) spawnDust(b.x + b.w/2, b.y + b.h, 2, '#ffffff');
   }
-  if (b.flying || b.cfg.beast === 'dragon') {
-    // 🦅🐉 飛鷹／龍：任意飛行——左右自由，按住跳躍鍵攀升，放開緩降
-    b.x += (inputX * 330 + dashBoost) * dt;
-    b.y += (wantJump ? -300 : 90) * dt;
-    b.y = clamp(b.y, GROUND_Y - 560, GROUND_Y - 40);
+  if (b.flying || (b.cfg && b.cfg.beast === 'dragon') || b.isBigBat) {
+    // 🦅🐉🦇 飛鷹／龍／洞穴巨蝠：任意飛行——左右自由，按住跳躍鍵攀升，放開緩降
+    const fSpeed = b.isBigBat ? 360 : 330;
+    b.x += (inputX * fSpeed + dashBoost) * dt;
+    b.y += (wantJump ? (b.isBigBat ? -360 : -300) : 80) * dt;
+    const minY = (dungeon && dungeon.active) ? 50 : (GROUND_Y - 560);
+    const maxY = (dungeon && dungeon.active) ? (dungeon.groundY - 40) : (GROUND_Y - 40);
+    b.y = clamp(b.y, minY, maxY);
     // 🧱 飛行座駕下降時也能停在石塊上
     if (!wantJump) {
       const sup = mountSupport(b);
@@ -1713,6 +2367,7 @@ function updateMountRide(dt) {
 }
 
 function updateEnemies(dt) {
+  if (dungeon.active) return;
   for (const e of enemies) {
     if (e.dead) { e.deadT += dt; continue; }
 
@@ -1738,12 +2393,9 @@ function updateEnemies(dt) {
       const alt = GROUND_Y - 46 + Math.sin(e.anim * 3.2) * 14;
       e.y += (alt - e.y) * Math.min(1, dt * 4);
     } else if (e.kind === 'bee') {
-      // 🐝 蜜蜂：空中盤旋巡邏，偶爾低飛俯衝
-      e.lowT -= dt;
-      if (e.lowT <= 0) { e.lowT = 2.5 + Math.random() * 3; e.low = 0.9; }
-      if (e.low > 0) e.low -= dt;
-      const alt = (e.low > 0 ? GROUND_Y - 30 : GROUND_Y - 90) + Math.sin(e.anim * 4.5) * 12;
-      e.y += (alt - e.y) * Math.min(1, dt * 5);
+      // 🐝 蜜蜂：空中上下無限循環飛行（平滑正弦波軌跡）
+      const baseAlt = GROUND_Y - 80;
+      e.y = baseAlt + Math.sin(e.anim * 3.4) * 48;
     } else if (e.kind === 'frog') {
       // 🐸 坐著為主，偶爾向前低跳
       e.hopT -= dt;
@@ -1787,6 +2439,7 @@ function updateEnemies(dt) {
 }
 
 function updateCoins(dt) {
+  if (dungeon.active) return;
   for (const c of coins) {
     if (c.got) continue;
     if (c.cool > 0) { c.cool -= dt; continue; }
@@ -1817,6 +2470,7 @@ function groundYAt(x) {
 }
 
 function updateBeasts(dt) {
+  if (dungeon.active) return;
   player.ridingOn = null;             // 每幀重新偵測站在大怪背上
   for (const b of beasts) {
     if (b.defeated) continue;
@@ -1988,7 +2642,31 @@ function updateProjs(dt) {
     }
     if (p.life <= 0 || p.x < cam.x - 300 || p.x > cam.x + W / scale + 300) { projs.splice(i, 1); continue; }
     const box = { x: p.x - p.r, y: p.y - p.r, w: p.r * 2, h: p.r * 2 };
+    if (p.deflected && hydra && hydra.alive && !hydra.lying) {
+      const hb = { x: hydra.x - 40, y: GROUND_Y - 470, w: 440, h: 480 };
+      if (overlap(box, hb)) {
+        hydra.shakeT = 0.6;
+        score += 250;
+        spawnRing(p.x, p.y, '#ffd54a');
+        spawnDust(p.x, p.y, 18, '#ff9a3d');
+        if (typeof BGM !== 'undefined' && BGM.sfx) BGM.sfx('stomp');
+        projs.splice(i, 1);
+        continue;
+      }
+    }
     if (overlap(player, box) && player.hurtTimer <= 0) {
+      if (p.boss && player.hasShield) {
+        // 🛡️ 聖光神盾反彈九頭巨龍烈火！
+        spawnRing(p.x, p.y, '#ffd54a');
+        spawnDust(p.x, p.y, 16, '#fff0a0');
+        if (typeof BGM !== 'undefined' && BGM.sfx) BGM.sfx('block');
+        p.vx = -p.vx * 1.35;
+        p.vy = -180;
+        p.boss = false;
+        p.deflected = true;
+        score += 150;
+        continue;
+      }
       // 🥅 揮網防守：抵消獅吼衝擊波 / 龍火球（九頭龍火球除外），雙方彈開
       if (!p.boss && player.atkT > 0) {
         spawnRing(p.x, p.y, '#aef1ff');
@@ -2059,6 +2737,7 @@ function updateShots(dt) {
   for (let i = shots.length - 1; i >= 0; i--) {
     const f = shots[i];
     f.x += f.vx * dt;
+    if (f.vy) f.y += f.vy * dt;
     f.life -= dt;
     if (Math.random() < 0.7) {   // 火星尾跡
       particles.push({ x: f.x, y: f.y, vx: (Math.random()-0.5)*40, vy: -30 - Math.random()*40,
@@ -2069,7 +2748,8 @@ function updateShots(dt) {
     if (!gone) {
       for (const e of enemies) {          // 燒死小怪
         if (e.dead) continue;
-        if (overlap(fb, e)) {
+        const eHitBox = (e.kind === 'snake') ? { x: e.x, y: e.y - 36, w: e.w, h: e.h + 40 } : e;
+        if (overlap(fb, eHitBox)) {
           e.dead = true; e.deadT = 0;
           score += 150;
           BGM.sfx('stomp');
@@ -2121,6 +2801,27 @@ function updateAttack(dt) {
   // 🧺 小紅帽：標準捕網（82px）！
   const reachW = (cost === 'cowboy') ? 185 : (cost === 'tang') ? 210 : (cost === 'princess') ? 135 : 82;
   const zone = { x: player.x + player.w/2 + (dir > 0 ? 4 : -reachW - 4), y: player.y - 18, w: reachW, h: player.h + 34 };
+  // 🦇 揮網擊中地牢半 Boss 大蝙蝠
+  if (dungeon && dungeon.active && dungeon.bigBat && !dungeon.bigBat.tamed) {
+    const bb = dungeon.bigBat;
+    const bbBox = { x: bb.x, y: bb.y, w: bb.w, h: bb.h };
+    if (overlap(zone, bbBox) && bb.hurtT <= 0 && bb.hearts > 0) {
+      player.atkHitDone = true;
+      bb.hearts--;
+      bb.hurtT = 0.45;
+      score += 200;
+      if (typeof BGM !== 'undefined' && BGM.sfx) BGM.sfx('block');
+      spawnDust(bb.x + bb.w/2, bb.y + bb.h/2, 16, '#ff4500');
+      spawnRing(bb.x + bb.w/2, bb.y + bb.h/2, '#ffd54a');
+      if (bb.hearts <= 0) {
+        bb.state = 'crazy';
+        if (typeof BGM !== 'undefined' && BGM.sfx) BGM.sfx('defeat');
+        toastAchievement({ icon: '🦇', title: '巨蝠暴怒狂飆！抓準時機跳上後背長按馴服！' });
+      }
+      return;
+    }
+  }
+
   // 🥅 捕網揮向九頭龍：擋退打斷噴火（殺不死牠，只能用答題逐一滅頭）
   if (hydra && hydra.alive && !hydra.lying && !hydra.grabbed && !hydra.thrown && !player.mount) {
     const hbx = { x: hydra.x - 40, y: GROUND_Y - 470, w: 440, h: 480 };
@@ -2516,6 +3217,44 @@ function drawJerusalem() {
 
 function drawBeast(b) {
   if (b.defeated) return;
+  if (b.isBigBat) {
+    ctx.save();
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    const flap = Math.sin(time * 18);
+    ctx.translate(cx, cy);
+    ctx.scale(b.dir, 1);
+    ctx.fillStyle = '#261730';
+    ctx.strokeStyle = '#4a2f5c';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-10, -5);
+    ctx.quadraticCurveTo(-40, -45 - flap * 26, -65, -15 - flap * 18);
+    ctx.quadraticCurveTo(-45, 10, -10, 8);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(10, -5);
+    ctx.quadraticCurveTo(40, -45 - flap * 26, 65, -15 - flap * 18);
+    ctx.quadraticCurveTo(45, 10, 10, 8);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = '#1e1326';
+    ctx.beginPath(); ctx.ellipse(0, 0, 18, 22, 0, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#00e676';
+    ctx.beginPath(); ctx.arc(-6, -6, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6, -6, 3.5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath();
+    ctx.moveTo(-10, -22); ctx.lineTo(-12, -32); ctx.lineTo(-5, -26);
+    ctx.lineTo(0, -34); ctx.lineTo(5, -26); ctx.lineTo(12, -32); ctx.lineTo(10, -22);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+    return;
+  }
   const im = IMGS[b.cfg.beast];
   ctx.save();
   // 🐺🐻🦅🦁🐉 木偶動畫＋攻擊姿態：伏低、站立、俯衝、拍翼
@@ -2668,11 +3407,13 @@ function openQuiz(beast, custom) {
   }
 
   quizEl.title.textContent = custom
-    ? (custom.hydraHead !== undefined
-        ? '🐉 九頭巨龍 · 啟示錄聖言考驗 · 答對即可擊碎龍頭'
-        : custom.tame
-          ? `${beast.cfg.emoji} ${beast.cfg.beastName}的${beast.cfg.subject}考驗 · 答對即可馴服為座駕🏇`
-          : '✝️ 隱藏寶藏 · 啟示錄考驗')
+    ? (custom.bigBat
+        ? '🦇 洞穴巨蝠 · 聖經深造考驗 · 答對即可馴服並取得神盾🛡️'
+        : custom.hydraHead !== undefined
+          ? '🐉 九頭巨龍 · 啟示錄聖言考驗 · 答對即可擊碎龍頭'
+          : custom.tame
+            ? `${beast.cfg.emoji} ${beast.cfg.beastName}的${beast.cfg.subject}考驗 · 答對即可馴服為座駕🏇`
+            : '✝️ 隱藏寶藏 · 啟示錄考驗')
     : `${beast.cfg.emoji} ${beast.cfg.beastName}的${beast.cfg.subject}考驗 · 答對即可擊敗`;
   quizEl.scene.textContent = '📁 ' + (item.scene || beast.cfg.subject + '案件');
   quizEl.q.textContent = item.q;
@@ -2704,11 +3445,13 @@ function answerQuiz(btn, isCorrect, explain) {
     quizEl.opts.querySelectorAll('.quizOpt').forEach(b => b.disabled = true);
     quizEl.explain.className = 'ok';
     quizEl.explain.textContent = quizCustom
-      ? (quizCustom.hydraHead !== undefined
-          ? '✅ 答對了！聖言擊碎一個龍頭！' + (explain ? '　' + explain : '')
-          : quizCustom.tame
-            ? `✅ 答對了！魔物成為你的座駕🏇，🔑 取得鑰匙（${keyCount + 1}/${KEYS_NEED}）` + (explain ? '　' + explain : '')
-            : '✅ 答對了！✝️ 取得隱藏寶藏「十字架」！' + (explain ? '　' + explain : ''))
+      ? (quizCustom.bigBat
+          ? '✅ 答對了！🦇 洞穴巨蝠已被馴服！獲得「聖光守護神盾」🛡️！' + (explain ? '　' + explain : '')
+          : quizCustom.hydraHead !== undefined
+            ? '✅ 答對了！聖言擊碎一個龍頭！' + (explain ? '　' + explain : '')
+            : quizCustom.tame
+              ? `✅ 答對了！魔物成為你的座駕🏇，🔑 取得鑰匙（${keyCount + 1}/${KEYS_NEED}）` + (explain ? '　' + explain : '')
+              : '✅ 答對了！✝️ 取得隱藏寶藏「十字架」！' + (explain ? '　' + explain : ''))
       : `✅ 答對了！魔物被擊敗，🔑 取得鑰匙（${keyCount + 1}/${KEYS_NEED}）` + (explain ? '　' + explain : '');
     quizEl.explain.style.display = 'block';
     quizEl.continue.style.display = 'block';
@@ -2735,7 +3478,24 @@ function answerQuiz(btn, isCorrect, explain) {
 function closeQuiz(collect) {
   quizEl.overlay.classList.remove('show');
   if (collect && quizBeast) {
-    if (quizCustom && quizCustom.hydraHead !== undefined) {
+    if (quizCustom && quizCustom.bigBat) {
+      const bb = dungeon.bigBat;
+      bb.tamed = true;
+      bb.state = 'tamed';
+      bb.hearts = 5;
+      dungeon.shieldCollected = true;
+      dungeon.ascentReady = true;
+      player.hasShield = true;
+      player.mount = bb;
+      player.mounts = [bb];
+      score += 1000;
+      unlockAchievement('big_bat_tamed');
+      unlockAchievement('shield_get');
+      unlockAchievement('all_mounts');
+      spawnRing(player.x, player.y, '#ffd54a');
+      spawnRing(player.x, player.y, '#7df9ff');
+      toastAchievement({ icon: '🛡️', title: '【聖光神盾】已獲得！巨蝠已馴服！' });
+    } else if (quizCustom && quizCustom.hydraHead !== undefined) {
       // 🐉 擊碎一個龍頭
       const hd = hydra.heads[quizCustom.hydraHead];
       if (hd && hd.alive) {
@@ -2752,6 +3512,7 @@ function closeQuiz(collect) {
           hydra.lying = true;
           hydra.shakeT = 1.2;
           score += 1000;
+          unlockAchievement('hydra_defeat');
           spawnDust(hydra.x + 160, GROUND_Y - 120, 30, '#b9c6e8');
         }
       }
@@ -2760,6 +3521,7 @@ function closeQuiz(collect) {
     } else if (quizCustom) {    // ✝️ 取得十字架寶藏
       quizBeast.got = true;
       score += 500;
+      unlockAchievement('cross_get');
       spawnDust(quizBeast.x + 18, quizBeast.y + 24, 14, '#fff3b0');
     } else {
       defeatBeast(quizBeast);
@@ -3243,18 +4005,26 @@ function drawHydraBody(lying) {
 
 
 function checkGoal() {
-  if (!goal) return;
+  if (dungeon.active || !goal) return;
   if (player.x + player.w > goal.x && player.x < goal.x + 60) {
     if (player.y + player.h > goal.y) {
       if (keyCount >= KEYS_NEED) {
         // 🚩 集滿鑰匙 → 拉下旗子過關，進入結算
         score += 1000;
         allStats.push({ stage, ...stageStats, cfg: TH() });
+        if (stage === 1) unlockAchievement('forest_clear');
+        else if (stage === 2) unlockAchievement('mountain_clear');
+        else if (stage === 3) unlockAchievement('desert_clear');
+        else if (stage === 4) unlockAchievement('seaside_clear');
+        else if (stage === 5) unlockAchievement('palace_clear');
+        if (stageStats.asked >= 3 && stageStats.wrong === 0) unlockAchievement('perfect_quiz');
+
         if (stage >= STAGES.length) {
           if (cross && cross.got) {
             // ✝️ 持有十字架 → 觸發新天新地
             state = 'jerusalem';
             jeruT = 0;
+            unlockAchievement('jerusalem_end');
             playFanfare();
           } else {
             state = 'win';
@@ -3654,8 +4424,19 @@ function updateParticles(dt) {
 function updateCamera(dt) {
   const viewW = W / scale;
   const viewH = H / scale;
-
   const isPort = H > W;
+
+  if (dungeon && dungeon.active) {
+    let tx = player.x + player.w/2 - viewW * 0.45;
+    tx = clamp(tx, 0, Math.max(0, dungeon.w - viewW));
+    cam.x += (tx - cam.x) * Math.min(1, dt * 8);
+
+    let ty = player.y + player.h/2 - viewH * 0.5;
+    ty = clamp(ty, 0, Math.max(0, dungeon.h - viewH));
+    cam.y += (ty - cam.y) * Math.min(1, dt * 6);
+    return;
+  }
+
   let tx = player.x + player.w/2 - viewW * (isPort ? 0.35 : 0.4);
   tx = clamp(tx, 0, Math.max(0, WORLD_W - viewW));
   cam.x += (tx - cam.x) * Math.min(1, dt * 7);
@@ -3672,6 +4453,7 @@ function update(dt) {
   if (state === 'playing') {
     readInput();
     updatePlayer(dt);
+    if (dungeon && dungeon.active) updateDungeon(dt);
     updateAttack(dt);
     updateEnemies(dt);
     updateBeasts(dt);
@@ -3825,7 +4607,8 @@ function drawCritter(kind, cx, yBottom, s, st) {
     const bob = fly ? Math.sin(anim * 10) * 0.10 : Math.abs(Math.sin(anim * 5.2)) * 0.055;
     const tilt = Math.sin(anim * 3.1) * (fly ? 0.10 : 0.06);
     const sq = 1 + Math.sin(anim * 5.2) * (fly ? 0.05 : 0.035);
-    const w = s * (him.width / him.height) * 1.75, h = s * 1.75;
+    const mult = (kind === 'bee') ? 1.15 : 1.75;
+    const w = s * (him.width / him.height) * mult, h = s * mult;
     ctx.save();
     ctx.translate(cx, yBottom);
     ctx.scale(dir, 1);
@@ -3833,23 +4616,6 @@ function drawCritter(kind, cx, yBottom, s, st) {
     ctx.rotate(tilt);
     ctx.scale(1 / sq, sq);
     ctx.drawImage(him, -w / 2, -h - bob * s, w, h);
-    if (kind === 'dog') {
-      /* 🐕 四條腿步行循環：前後腿交錯前擺，遮蓋靜態圖的腿 */
-      const u = s / 30, ph = anim * 9;
-      const leg = (off, phase, col) => {
-        const sw = Math.sin(ph + phase) * 0.62;
-        ctx.strokeStyle = col;
-        ctx.lineWidth = 3.4 * u;
-        ctx.lineCap = 'round';
-        const hx = off * u, hy = -9 * u;
-        ctx.beginPath();
-        ctx.moveTo(hx, hy);
-        ctx.lineTo(hx + Math.sin(sw) * 7 * u, hy + 10.5 * u);
-        ctx.stroke();
-      };
-      leg(-8, 0, '#7a5230'); leg(7, Math.PI, '#7a5230');        // 遠側兩腿（深色）
-      leg(-6, Math.PI, '#b98554'); leg(9, 0, '#b98554');        // 近側兩腿（淺色）
-    }
     ctx.restore();
     return;
   }
@@ -4505,6 +5271,24 @@ function drawPlayer() {
     }
   }
 
+  if (player.hasShield) {
+    // 🛡️ 聖光神盾：金光圓盾＋十字星印記
+    ctx.save();
+    ctx.translate(-player.w * 0.28, -player.h * 0.45);
+    ctx.shadowColor = '#ffd54a';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#b8860b';
+    ctx.beginPath(); ctx.ellipse(0, 0, 11, 14, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath(); ctx.ellipse(0, 0, 9.5, 12.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffeaa7';
+    ctx.beginPath(); ctx.ellipse(0, 0, 7.5, 10, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#c0392b';
+    ctx.fillRect(-1.5, -6, 3, 12);
+    ctx.fillRect(-5, -2, 10, 3);
+    ctx.restore();
+  }
+
   ctx.restore();
   drawJumpDots();
 }
@@ -4793,6 +5577,12 @@ function drawHUD() {
   ctx.fillStyle = keyCount >= KEYS_NEED ? '#3ddc7f' : '#ffd54a';
   ctx.fillText(`🔑${keyCount}/${KEYS_NEED}`, 196, 35);
 
+  if (player.hasShield) {
+    ctx.fillStyle = '#ffd54a';
+    ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
+    ctx.fillText('🛡️神盾', 260, 35);
+  }
+
   // 關卡標籤（第二列，避開愛心與鑰匙）
   ctx.textAlign = 'center';
   ctx.globalAlpha = 0.35;
@@ -4958,7 +5748,27 @@ function drawParallax(img, factor, targetH, bottomScreenY, mirror) {
 function render() {
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';   // 高解像小怪縮放保持細節
+  ctx.imageSmoothingQuality = 'high';
+
+  if (dungeon && dungeon.active) {
+    ctx.save();
+    ctx.scale(scale, scale);
+    ctx.translate(-cam.x, -cam.y);
+    drawDungeon(ctx);
+    drawPlayer();
+    drawRings();
+    drawParticles();
+    ctx.restore();
+
+    ctx.save();
+    drawJoystick();
+    drawJumpButton();
+    drawAttackButton();
+    drawHUD();
+    drawOverlay();
+    ctx.restore();
+    return;
+  }
 
   const th = TH();
   const sky = ctx.createLinearGradient(0, 0, 0, H);
