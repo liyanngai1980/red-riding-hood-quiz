@@ -11,7 +11,8 @@
 <link rel="apple-touch-icon" href="assets/cost_red_sprite.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&display=swap"></noscript>
 <style>
   /* 王漢宗顏體（繁體書法字，GPL 自由授權，本地子集 48KB） */
   @font-face{font-family:"YanKaiTC";src:url('assets/fonts/YanKaiTC.ttf') format('truetype');
@@ -342,7 +343,7 @@
 
 <!-- ====================== 宣傳影片播放層 ====================== -->
 <div id="videoOverlay">
-  <video id="promoVideo" src="promo.mp4" playsinline preload="none"></video>
+  <video id="promoVideo" playsinline preload="none"></video>
   <button id="skipVideo">⏭ 略過影片，開始遊戲</button>
 </div>
 
@@ -354,11 +355,14 @@
 <script>
 'use strict';
 
-/* ====================== PWA 離線緩存支援 ====================== */
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
+/* ====================== 快速啟動與 Service Worker 優化 ====================== */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    for (const r of regs) r.unregister();
+  }).catch(() => {});
+}
+if ('caches' in window) {
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k))).catch(() => {});
 }
 
 /* ====================== 畫布與縮放 ====================== */
@@ -469,29 +473,64 @@ const STAGES = [
     grass:'#9aa8b8', grassTop:'#c2cede', dirt:'#6a5a72' }
 ];
 
-/* ====================== 高解析度圖片素材 ====================== */
+/* ====================== 高解析度圖片素材（按需即時加載，極速秒開） ====================== */
 const IMGS = {};
 function loadImg(key, src) {
+  if (IMGS[key]) return;
   const im = new Image();
   im.onload  = () => { IMGS[key] = im; };
   im.onerror = () => {};
   im.src = src;
 }
-['player','slime','wolf','bear','eagle','lion','dragon'].forEach(n => loadImg(n, 'assets/' + n + '.png'));
-['cost_red','cost_tang','cost_princess','cost_cowboy'].forEach(n => {
-  loadImg(n, 'assets/' + n + '.png');
-  loadImg(n + '_sprite', 'assets/' + n + '_sprite.png');
-});   // 👗 完整高解像套裝大圖與無邊框精確精靈圖
-['piranha','bee','bat','frog','snake'].forEach(n => loadImg('crit_' + n, 'assets/crit_' + n + '.png'));  // 🎨 高解像小怪
-loadImg('hydra_body',      'assets/hydra_body.png');        // 🐉 九頭巨龍：高解像身軀
-loadImg('hydra_head',      'assets/hydra_head.png');        // 閉口龍頭
-loadImg('hydra_head_fire', 'assets/hydra_head_fire.png');   // 張口噴火龍頭
-// ⚡ 立即加載所有關卡高解像度背景（已壓縮優化，秒開秒載）
-STAGES.forEach(s => {
+
+function loadStageAssets(stg) {
+  const s = STAGES[stg - 1];
+  if (!s) return;
   loadImg(s.bg + '_far',  'assets/' + s.bg + '_far.png');
   loadImg(s.bg + '_mid',  'assets/' + s.bg + '_mid.png');
   loadImg(s.bg + '_near', 'assets/' + s.bg + '_near.png');
+  loadImg(s.beast, 'assets/' + s.beast + '.png');
+  loadImg(s.beast + '_pbase', 'assets/parts/' + s.beast + '_base.png');
+  if (PARTS[s.beast]) {
+    PARTS[s.beast].parts.forEach(p => loadImg('p_' + p.key, 'assets/parts/' + p.key + '.png'));
+  }
+  const ekind = ENEMY_KINDS[stg - 1];
+  if (ekind) loadImg('crit_' + ekind, 'assets/crit_' + ekind + '.png');
+  if (stg === 5) {
+    loadImg('hydra_body',      'assets/hydra_body.png');
+    loadImg('hydra_head',      'assets/hydra_head.png');
+    loadImg('hydra_head_fire', 'assets/hydra_head_fire.png');
+    loadImg('crit_bat',        'assets/crit_bat.png');
+  }
+}
+
+// ⚡ 啟動首屏優先資產（極速秒開，小於 1MB）
+loadImg('player', 'assets/player.png');
+loadImg('wolf',   'assets/wolf.png');
+loadImg('player_pbase', 'assets/parts/player_base.png');
+if (PARTS['player']) PARTS['player'].parts.forEach(p => loadImg('p_' + p.key, 'assets/parts/' + p.key + '.png'));
+if (PARTS['wolf']) PARTS['wolf'].parts.forEach(p => loadImg('p_' + p.key, 'assets/parts/' + p.key + '.png'));
+
+['cost_red','cost_tang','cost_princess','cost_cowboy'].forEach(n => {
+  loadImg(n, 'assets/' + n + '.png');
+  loadImg(n + '_sprite', 'assets/' + n + '_sprite.png');
 });
+
+loadStageAssets(1);
+
+setTimeout(() => {
+  const idleBg = () => {
+    [2, 3, 4, 5].forEach(stg => loadStageAssets(stg));
+    ['tang', 'princess', 'cowboy'].forEach(c => {
+      loadImg('player_' + c + '_pbase', 'assets/parts/player_' + c + '_base.png');
+      loadImg('p_player_' + c + '_head', 'assets/parts/player_' + c + '_head.png');
+      loadImg('p_player_' + c + '_legL', 'assets/parts/player_' + c + '_legL.png');
+      loadImg('p_player_' + c + '_legR', 'assets/parts/player_' + c + '_legR.png');
+    });
+  };
+  if ('requestIdleCallback' in window) requestIdleCallback(idleBg);
+  else setTimeout(idleBg, 500);
+}, 1200);
 
 /* ====================== 骨架木偶部件（四肢/翅膀/頭部） ====================== */
 // 內建完整骨架定義（保證本地 file:// 與無網絡環境下 100% 立即啟動高解像木偶）
@@ -534,19 +573,6 @@ const PARTS = {
     { "key": "dragon_wingR", "x": 832, "y": 331, "w": 171, "h": 313, "px": 862.58, "py": 398.16, "layer": "front", "swing": "wingR" }
   ]}
 };
-
-// 立即加載所有木偶部件底圖與分件
-for (const name in PARTS) {
-  loadImg(name + '_pbase', 'assets/parts/' + name + '_base.png');
-  PARTS[name].parts.forEach(p => loadImg('p_' + p.key, 'assets/parts/' + p.key + '.png'));
-}
-// 👗 立即加載所有玩家套裝骨架部件（唐裝、公主裝、牛仔裝）
-['tang', 'princess', 'cowboy'].forEach(c => {
-  loadImg('player_' + c + '_pbase', 'assets/parts/player_' + c + '_base.png');
-  loadImg('p_player_' + c + '_head', 'assets/parts/player_' + c + '_head.png');
-  loadImg('p_player_' + c + '_legL', 'assets/parts/player_' + c + '_legL.png');
-  loadImg('p_player_' + c + '_legR', 'assets/parts/player_' + c + '_legR.png');
-});
 
 // 若有遠端 parts.json 更新則熱加載
 fetch('assets/parts/parts.json').then(r => r.json()).then(data => {
@@ -1359,6 +1385,7 @@ function drawDungeon(ctx) {
 
 /* ====================== 關卡建構 ====================== */
 function buildLevel() {
+  loadStageAssets(stage);
   if (keyItems.length) { keyCount += keyItems.length; }   // 重生/換關前，飛行中的鑰匙先入帳
   keyItems = [];
   platforms = [];
@@ -4271,6 +4298,9 @@ document.getElementById('videoBtn').addEventListener('click', () => {
   BGM.sfx('click');
   document.getElementById('startOverlay').classList.remove('show');
   videoOverlay.classList.add('show');
+  if (!promoVideo.src || !promoVideo.src.includes('promo.mp4')) {
+    promoVideo.src = 'promo.mp4';
+  }
   promoVideo.currentTime = 0;
   promoVideo.play().catch(() => {});   // 部分瀏覽器需再用戶手勢才可播音
 });
