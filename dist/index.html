@@ -298,9 +298,17 @@
       font-family:'YanKaiTC','DFKai-SB','Kaiti TC','STKaiti','Noto Serif TC',serif;color:#6a4a10;
       background:linear-gradient(180deg,#fdf2cd,#f7e3a1);text-decoration:none;letter-spacing:2px">📖 遊戲介紹</a>
     <div id="ownRow" style="margin-top:8px"></div>
+    <div id="loadingWrap" style="margin-top:10px;width:100%;transition:opacity .4s ease">
+      <div style="font-size:10px;font-weight:700;color:#7a1f16;letter-spacing:1px;margin-bottom:3px;display:flex;justify-content:space-between">
+        <span>🌾 地圖素材載入</span><span id="loadingPct">100%</span>
+      </div>
+      <div style="width:100%;height:5px;background:rgba(120,30,20,0.18);border-radius:999px;overflow:hidden;border:1px solid rgba(120,30,20,0.25)">
+        <div id="loadingBar" style="width:100%;height:100%;background:linear-gradient(90deg,#ffd54a,#3ddc7f);transition:width .2s ease"></div>
+      </div>
+    </div>
   </div>
-  <canvas id="menuCanvas"></canvas>
-</div>
+</div><!-- /startCard -->
+<canvas id="menuCanvas"></canvas>
 </div><!-- /startOverlay -->
 
 <!-- ====================== 💔 戰敗選擇層 ====================== -->
@@ -518,11 +526,37 @@ const ENEMY_KINDS = ['piranha', 'bee', 'bat', 'frog', 'snake'];
 
 /* ====================== 高解析度圖片素材（按需即時加載，極速秒開） ====================== */
 const IMGS = {};
+let totalImagesToLoad = 0;
+let loadedImagesCount = 0;
+
+function updateLoadingBar() {
+  const bar = document.getElementById('loadingBar');
+  const pctTxt = document.getElementById('loadingPct');
+  const wrap = document.getElementById('loadingWrap');
+  if (!bar || !pctTxt) return;
+  const pct = totalImagesToLoad > 0 ? Math.min(100, Math.round((loadedImagesCount / totalImagesToLoad) * 100)) : 100;
+  bar.style.width = pct + '%';
+  pctTxt.textContent = pct + '%';
+  if (pct >= 100) {
+    setTimeout(() => { if (wrap) wrap.style.opacity = '0'; }, 900);
+  } else {
+    if (wrap) wrap.style.opacity = '1';
+  }
+}
+
 function loadImg(key, src) {
   if (IMGS[key]) return;
+  totalImagesToLoad++;
   const im = new Image();
-  im.onload  = () => { IMGS[key] = im; };
-  im.onerror = () => {};
+  im.onload  = () => {
+    IMGS[key] = im;
+    loadedImagesCount++;
+    updateLoadingBar();
+  };
+  im.onerror = () => {
+    loadedImagesCount++;
+    updateLoadingBar();
+  };
   im.src = src;
 }
 
@@ -1501,7 +1535,7 @@ function buildLevel() {
     [5250, 5150, 5400]
   ];
   /* 🌺🐝🦇🐸🐍 各關小妖：食人花/蜜蜂/蝙蝠/青蛙/蛇 */
-  const ENEMY_KINDS = ['piranha', 'bee', 'bat', 'frog', 'snake'];
+  const ekind = ENEMY_KINDS[stage - 1] || 'piranha';
   const ESIZE = { piranha:[32,44], bee:[26,20], bat:[38,26], frog:[30,24], snake:[46,20] };
   for (const [x, minX, maxX] of enemyDefs) {
     const [ew, eh] = ESIZE[ekind];
@@ -5982,8 +6016,28 @@ function drawMiniPlayer(x, yB, dh, dir, ph) {
 /* 🐺 選單大野狼：在後面賣力追小紅帽，永遠差一步追不到 */
 function drawMiniWolf(x, yB, dw, dir, ph) {
   const meta = PARTS.wolf;
-  const base = IMGS.wolf_pbase;
-  if (!meta || !base) return;
+  const base = IMGS.wolf_pbase || IMGS.wolf;
+  if (!base || !base.width || !base.height) {
+    mctx.save();
+    mctx.translate(x, yB);
+    mctx.scale(dir, 1);
+    mctx.fillStyle = 'rgba(60,40,10,0.20)';
+    mctx.beginPath();
+    mctx.ellipse(0, 2, dw * 0.34, 5, 0, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.fillStyle = '#64748b';
+    mctx.beginPath();
+    mctx.ellipse(0, -20, 36, 18, -0.1, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.beginPath();
+    mctx.arc(26, -26, 14, 0, Math.PI * 2);
+    mctx.fill();
+    mctx.beginPath();
+    mctx.moveTo(22, -38); mctx.lineTo(26, -50); mctx.lineTo(32, -38);
+    mctx.fill();
+    mctx.restore();
+    return;
+  }
   const dh = dw * (meta.h / meta.w);
   const sx = dw / meta.w, sy = dh / meta.h;
   mctx.save();
