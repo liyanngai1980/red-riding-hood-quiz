@@ -533,14 +533,15 @@ function updateLoadingBar() {
   const bar = document.getElementById('loadingBar');
   const pctTxt = document.getElementById('loadingPct');
   const wrap = document.getElementById('loadingWrap');
-  if (!bar || !pctTxt) return;
   const pct = totalImagesToLoad > 0 ? Math.min(100, Math.round((loadedImagesCount / totalImagesToLoad) * 100)) : 100;
-  bar.style.width = pct + '%';
-  pctTxt.textContent = pct + '%';
-  if (pct >= 100) {
-    setTimeout(() => { if (wrap) wrap.style.opacity = '0'; }, 900);
-  } else {
-    if (wrap) wrap.style.opacity = '1';
+  if (bar && pctTxt) {
+    bar.style.width = pct + '%';
+    pctTxt.textContent = pct + '%';
+    if (pct >= 100) {
+      setTimeout(() => { if (wrap) wrap.style.opacity = '0'; }, 900);
+    } else {
+      if (wrap) wrap.style.opacity = '1';
+    }
   }
 }
 
@@ -1220,33 +1221,238 @@ function updateDungeon(dt) {
   }
 }
 
+/* 🦇 超高解析度關節翼膜蝙蝠繪製（雙段關節拍動＋翼骨骨架＋波浪蹼膜＋絨毛胸甲） */
+function drawDetailedBat(ctx, cx, cy, sc, dir, anim, opts) {
+  opts = opts || {};
+  const crazy = !!opts.crazy;
+  const tamed = !!opts.tamed;
+  const blue  = !!opts.blue;
+  const hurt  = !!opts.hurt;
+
+  const speed = crazy ? 20 : (blue ? 17 : 13);
+  const ph = anim * speed;
+  const flap1 = Math.sin(ph);                  // 內段主翼拍動
+  const flap2 = Math.sin(ph - 0.65);           // 外段翼尖延遲柔韌擺動（呈現破空流體感）
+  const bodyBob = Math.sin(ph + Math.PI / 2) * 3.5;
+
+  ctx.save();
+  ctx.translate(cx, cy + bodyBob * sc);
+  ctx.scale(dir * sc, sc);
+  if (hurt) ctx.filter = 'brightness(2.3) contrast(1.2)';
+
+  const memInner = crazy ? '#5c1428' : (blue ? '#235a94' : '#311b47');
+  const memOuter = crazy ? '#8a1c38' : (blue ? '#3882c8' : '#4a296b');
+  const boneCol  = crazy ? '#ff6b81' : (blue ? '#82ccdd' : '#7e57c2');
+  const bodyCol  = crazy ? '#3b0d1b' : (blue ? '#193f6e' : '#1f1230');
+  const furCol   = crazy ? '#6e1d35' : (blue ? '#3b73b5' : '#3d2659');
+
+  // 繪製左右雙段動態翼膜與指骨
+  for (const side of [-1, 1]) {
+    ctx.save();
+    ctx.scale(side, 1);
+
+    // 肩關節起點
+    const sx = 9, sy = -4;
+    // 肘關節（隨 flap1 上下大幅度揮動）
+    const ex = 26, ey = -16 - flap1 * 18;
+    // 腕關節（指骨放射中心）
+    const wx = 42, wy = -22 - flap1 * 24 - flap2 * 8;
+    // 外翼尖（隨 flap2 延遲甩動，具鞭梢動感）
+    const tx = 68, ty = -10 - flap1 * 18 - flap2 * 22;
+    // 三根翼指末端（形成蝙蝠特有的扇形蹼膜）
+    const f1x = 58, f1y = 6 - flap1 * 12 - flap2 * 14;
+    const f2x = 40, f2y = 12 - flap1 * 10 - flap2 * 8;
+    const f3x = 22, f3y = 11 - flap1 * 5;
+
+    // 翼膜漸層填充
+    const wg = ctx.createLinearGradient(sx, sy - 25, tx, f2y + 10);
+    wg.addColorStop(0, memInner);
+    wg.addColorStop(0.65, memOuter);
+    wg.addColorStop(1, crazy ? 'rgba(255,40,85,0.88)' : (blue ? 'rgba(110,195,255,0.88)' : 'rgba(120,75,165,0.88)'));
+    ctx.fillStyle = wg;
+
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.quadraticCurveTo(ex, ey - 6, wx, wy);
+    ctx.quadraticCurveTo((wx + tx) * 0.5, wy - 5, tx, ty);
+    // 扇形凹弧蹼緣（3 段弧形薄膜）
+    ctx.quadraticCurveTo((tx + f1x) * 0.5 - 4, (ty + f1y) * 0.5 - 3, f1x, f1y);
+    ctx.quadraticCurveTo((f1x + f2x) * 0.5 - 2, (f1y + f2y) * 0.5 - 4, f2x, f2y);
+    ctx.quadraticCurveTo((f2x + f3x) * 0.5 - 1, (f2y + f3y) * 0.5 - 3, f3x, f3y);
+    ctx.quadraticCurveTo(15, 9, 8, 7);
+    ctx.closePath();
+    ctx.fill();
+
+    // 翼前緣主骨幹
+    ctx.strokeStyle = boneCol;
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.quadraticCurveTo(ex, ey - 6, wx, wy);
+    ctx.quadraticCurveTo((wx + tx) * 0.5, wy - 5, tx, ty);
+    ctx.stroke();
+
+    // 翼腕小鉤爪
+    ctx.strokeStyle = '#e0d4f7';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(wx, wy);
+    ctx.lineTo(wx + 2, wy - 6);
+    ctx.stroke();
+
+    // 放射狀翼指骨紋（3 條清晰指骨支撐薄膜）
+    ctx.strokeStyle = boneCol;
+    ctx.lineWidth = 1.35;
+    ctx.beginPath();
+    ctx.moveTo(wx, wy); ctx.quadraticCurveTo((wx + f1x) * 0.5, (wy + f1y) * 0.5, f1x, f1y);
+    ctx.moveTo(wx, wy); ctx.quadraticCurveTo((wx + f2x) * 0.5, (wy + f2y) * 0.5, f2x, f2y);
+    ctx.moveTo(ex, ey); ctx.lineTo(f3x, f3y);
+    ctx.stroke();
+
+    // 破空風壓殘影線（高速鼓翼時浮現）
+    if (Math.abs(flap2) > 0.55) {
+      ctx.strokeStyle = crazy ? 'rgba(255,120,150,0.45)' : 'rgba(210,235,255,0.38)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(tx - 6, ty + (flap2 > 0 ? 8 : -8), 10, -0.6, 0.8);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 後方擺動小短爪
+  ctx.strokeStyle = '#3a284c';
+  ctx.lineWidth = 2.2;
+  for (const sgn of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(sgn * 5, 14);
+    ctx.lineTo(sgn * 7, 20 + Math.sin(ph) * 2);
+    ctx.stroke();
+  }
+
+  // 身體與蓬鬆胸前絨毛
+  ctx.fillStyle = bodyCol;
+  ctx.beginPath();
+  ctx.ellipse(0, 2, 13, 16, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = furCol;
+  ctx.beginPath();
+  ctx.ellipse(0, -1, 9.5, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 立體雙耳與桃色內耳廓
+  for (const sgn of [-1, 1]) {
+    ctx.save();
+    ctx.translate(sgn * 7, -11);
+    ctx.rotate(sgn * (0.18 + Math.sin(ph * 0.5) * 0.08));
+    ctx.fillStyle = bodyCol;
+    ctx.beginPath();
+    ctx.moveTo(-4.5, 2);
+    ctx.quadraticCurveTo(sgn * 2, -15, 0, -18);
+    ctx.quadraticCurveTo(-sgn * 2, -12, 4.5, 2);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = crazy ? '#ff5252' : (blue ? '#74b9ff' : '#b388ff');
+    ctx.beginPath();
+    ctx.moveTo(-2.2, 1);
+    ctx.lineTo(0, -12);
+    ctx.lineTo(2.2, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 頭部
+  ctx.fillStyle = bodyCol;
+  ctx.beginPath();
+  ctx.arc(0, -7, 10.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 炯炯有神的雙眼與高光
+  const eyeCol = tamed ? '#00e676' : (crazy ? '#ff1744' : (blue ? '#7df9ff' : '#ffd54a'));
+  for (const sgn of [-1, 1]) {
+    ctx.fillStyle = eyeCol;
+    ctx.beginPath();
+    ctx.ellipse(sgn * 4.5, -8, 3.2, 2.7, sgn * -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(sgn * 4.5 + 0.8, -8.8, 1.1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 小巧鼻頭與潔白小尖牙
+  ctx.fillStyle = '#ff8da1';
+  ctx.beginPath();
+  ctx.arc(0, -4.5, 1.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(-3.8, -2); ctx.lineTo(-2.3, 2.2); ctx.lineTo(-1.0, -2);
+  ctx.moveTo(1.0, -2);  ctx.lineTo(2.3, 2.2);  ctx.lineTo(3.8, -2);
+  ctx.fill();
+
+  // 已馴服皇冠標誌
+  if (tamed) {
+    ctx.fillStyle = '#ffd700';
+    ctx.strokeStyle = '#b8860b';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-7, -16); ctx.lineTo(-9, -24); ctx.lineTo(-3.5, -19);
+    ctx.lineTo(0, -26); ctx.lineTo(3.5, -19); ctx.lineTo(9, -24); ctx.lineTo(7, -16);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
 function drawDungeon(ctx) {
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, dungeon.h);
+  const viewW = W / scale;
+  const viewH = H / scale;
+  const bgGrad = ctx.createLinearGradient(0, cam.y, 0, Math.max(dungeon.h, cam.y + viewH));
   bgGrad.addColorStop(0, '#060a14');
-  bgGrad.addColorStop(0.6, '#120f20');
-  bgGrad.addColorStop(1, '#24101b');
+  bgGrad.addColorStop(0.55, '#120f20');
+  bgGrad.addColorStop(1, '#1a0c16');
   ctx.fillStyle = bgGrad;
-  ctx.fillRect(cam.x - 50, 0, W / scale + 100, dungeon.h + 100);
+  ctx.fillRect(cam.x - 100, cam.y - 100, viewW + 200, Math.max(dungeon.h, viewH) + 300);
+
+  // 遠景深層岩壁暗影與水晶微光
+  ctx.fillStyle = '#0a0e1a';
+  for (let i = 0; i < 16; i++) {
+    const rx = (i * 190) % 2700;
+    const rw = 65 + (i % 3) * 25;
+    ctx.fillRect(rx, 0, rw, dungeon.groundY);
+  }
 
   ctx.fillStyle = '#0f1422';
   ctx.beginPath();
   ctx.moveTo(cam.x - 50, 0);
-  for (let x = cam.x - 50; x <= cam.x + W / scale + 50; x += 60) {
+  for (let x = cam.x - 50; x <= cam.x + viewW + 50; x += 60) {
     const spikeH = 25 + Math.sin(x * 0.05) * 15 + Math.cos(x * 0.12) * 10;
     ctx.lineTo(x, spikeH);
   }
-  ctx.lineTo(cam.x + W / scale + 50, 0);
+  ctx.lineTo(cam.x + viewW + 50, 0);
   ctx.closePath();
   ctx.fill();
 
   for (const p of dungeon.platforms) {
-    if (p.x + p.w < cam.x - 100 || p.x > cam.x + W / scale + 100) continue;
+    if (p.x + p.w < cam.x - 100 || p.x > cam.x + viewW + 100) continue;
     if (p.kind === 'dungeon_ground') {
-      ctx.fillStyle = '#1c1b26';
-      ctx.fillRect(p.x, p.y, p.w, p.h);
-      ctx.fillStyle = '#2f2d3d';
+      const gH = Math.max(p.h, viewH + 200);
+      const rockG = ctx.createLinearGradient(0, p.y, 0, p.y + 260);
+      rockG.addColorStop(0, '#1e1c29');
+      rockG.addColorStop(0.4, '#14121d');
+      rockG.addColorStop(1, '#09080e');
+      ctx.fillStyle = rockG;
+      ctx.fillRect(p.x, p.y, p.w, gH);
+      ctx.fillStyle = '#333044';
       ctx.fillRect(p.x, p.y, p.w, 8);
-      ctx.strokeStyle = '#4e4b63';
+      ctx.strokeStyle = '#565270';
       ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(p.x, p.y + 1); ctx.lineTo(p.x + p.w, p.y + 1); ctx.stroke();
     } else {
@@ -1264,12 +1470,14 @@ function drawDungeon(ctx) {
   }
 
   for (const [lx, lw] of [[460, 300], [1360, 280]]) {
-    const lavaGrad = ctx.createLinearGradient(0, dungeon.groundY + 10, 0, dungeon.groundY + 80);
+    const lavaH = Math.max(180, viewH);
+    const lavaGrad = ctx.createLinearGradient(0, dungeon.groundY + 8, 0, dungeon.groundY + 180);
     lavaGrad.addColorStop(0, '#ff5722');
-    lavaGrad.addColorStop(0.5, '#e64a19');
-    lavaGrad.addColorStop(1, '#bf360c');
+    lavaGrad.addColorStop(0.35, '#d84315');
+    lavaGrad.addColorStop(0.75, '#6d1b07');
+    lavaGrad.addColorStop(1, '#1a0805');
     ctx.fillStyle = lavaGrad;
-    ctx.fillRect(lx, dungeon.groundY + 8, lw, 120);
+    ctx.fillRect(lx, dungeon.groundY + 8, lw, lavaH);
     ctx.fillStyle = '#ffb74d';
     for (let bx = lx + 10; bx < lx + lw - 10; bx += 32) {
       const by = dungeon.groundY + 8 + Math.sin(time * 4 + bx) * 3;
@@ -1289,84 +1497,106 @@ function drawDungeon(ctx) {
     ctx.restore();
   }
 
+  // 🗡️ 高解析度晶石鐘乳下刺陷阱（多切面立體岩刺＋符文底座＋寒光尖端）
   for (const s of dungeon.spikeTraps) {
     ctx.save();
     let sx = s.x;
-    if (s.state === 'shake') sx += (Math.random() - 0.5) * 5;
-    ctx.fillStyle = '#3a3848';
-    ctx.beginPath();
-    ctx.moveTo(sx - s.w / 2, s.y);
-    ctx.lineTo(sx + s.w / 2, s.y);
-    ctx.lineTo(sx, s.y + s.h);
-    ctx.closePath();
+    if (s.state === 'shake') sx += Math.sin(time * 65) * 3.5;
+    const sw = s.w * 1.35, sh = s.h * 1.25;
+    const sy = s.y;
+
+    // 頂部岩座與鎖鏈環
+    ctx.fillStyle = '#252336';
+    roundRect(sx - sw * 0.65, sy - 8, sw * 1.3, 12, 4);
     ctx.fill();
-    ctx.strokeStyle = '#625f75';
+    ctx.strokeStyle = '#6c5ce7';
     ctx.lineWidth = 1.5;
     ctx.stroke();
+
+    // 左半暗面切面
+    const leftG = ctx.createLinearGradient(sx - sw / 2, sy, sx, sy + sh);
+    leftG.addColorStop(0, '#2c2c44');
+    leftG.addColorStop(0.6, '#3d3b5c');
+    leftG.addColorStop(1, '#74b9ff');
+    ctx.fillStyle = leftG;
+    ctx.beginPath();
+    ctx.moveTo(sx - sw / 2, sy + 2);
+    ctx.lineTo(sx, sy + 2);
+    ctx.lineTo(sx, sy + sh);
+    ctx.lineTo(sx - sw * 0.24, sy + sh * 0.55);
+    ctx.closePath();
+    ctx.fill();
+
+    // 右半高光切面
+    const rightG = ctx.createLinearGradient(sx, sy, sx + sw / 2, sy + sh);
+    rightG.addColorStop(0, '#4a476e');
+    rightG.addColorStop(0.55, '#6c6896');
+    rightG.addColorStop(1, '#dff9fb');
+    ctx.fillStyle = rightG;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy + 2);
+    ctx.lineTo(sx + sw / 2, sy + 2);
+    ctx.lineTo(sx + sw * 0.24, sy + sh * 0.55);
+    ctx.lineTo(sx, sy + sh);
+    ctx.closePath();
+    ctx.fill();
+
+    // 中央脊線與外框刻線
+    ctx.strokeStyle = 'rgba(210, 235, 255, 0.85)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy + 2);
+    ctx.lineTo(sx, sy + sh);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#1e1b2e';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(sx - sw / 2, sy + 2);
+    ctx.lineTo(sx - sw * 0.24, sy + sh * 0.55);
+    ctx.lineTo(sx, sy + sh);
+    ctx.lineTo(sx + sw * 0.24, sy + sh * 0.55);
+    ctx.lineTo(sx + sw / 2, sy + 2);
+    ctx.stroke();
+
+    // 符文發光刻痕與尖端寒芒
+    const runeGlow = (s.state === 'shake' || s.state === 'drop') ? '#ff5252' : '#a29bfe';
+    ctx.strokeStyle = runeGlow;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(sx - sw * 0.22, sy + 14);
+    ctx.lineTo(sx, sy + 22);
+    ctx.lineTo(sx + sw * 0.22, sy + 14);
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#74b9ff';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(sx, sy + sh - 1.5, 2.5, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
   for (const c of dungeon.coins) {
     if (c.got) continue;
-    if (c.x < cam.x - 50 || c.x > cam.x + W / scale + 50) continue;
+    if (c.x < cam.x - 50 || c.x > cam.x + viewW + 50) continue;
     drawCoin(c);
   }
 
   const bb = dungeon.bigBat;
   if (bb) {
-    ctx.save();
-    const cx = bb.x + bb.w / 2, cy = bb.y + bb.h / 2;
-    const flap = Math.sin(bb.anim * (bb.state === 'crazy' ? 22 : 13));
-    ctx.translate(cx, cy);
-    ctx.scale(bb.dir, 1);
-    if (bb.hurtT > 0) ctx.filter = 'brightness(2.2)';
-
-    ctx.fillStyle = bb.state === 'crazy' ? '#4a1525' : '#261730';
-    ctx.strokeStyle = bb.state === 'crazy' ? '#ff1744' : '#4a2f5c';
-    ctx.lineWidth = 2.5;
-
-    ctx.beginPath();
-    ctx.moveTo(-10, -5);
-    ctx.quadraticCurveTo(-40, -45 - flap * 26, -65, -15 - flap * 18);
-    ctx.quadraticCurveTo(-45, 10, -10, 8);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(10, -5);
-    ctx.quadraticCurveTo(40, -45 - flap * 26, 65, -15 - flap * 18);
-    ctx.quadraticCurveTo(45, 10, 10, 8);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-
-    ctx.fillStyle = bb.state === 'crazy' ? '#380e1c' : '#1e1326';
-    ctx.beginPath(); ctx.ellipse(0, 0, 18, 22, 0, 0, Math.PI * 2); ctx.fill();
-
-    ctx.fillStyle = '#2e1938';
-    ctx.beginPath(); ctx.moveTo(-12, -18); ctx.lineTo(-16, -34); ctx.lineTo(-6, -20); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(6, -20); ctx.lineTo(16, -34); ctx.lineTo(12, -18); ctx.fill();
-
-    ctx.fillStyle = bb.tamed ? '#00e676' : (bb.state === 'crazy' ? '#ff1744' : '#ffea00');
-    ctx.beginPath(); ctx.arc(-6, -6, 3.5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(6, -6, 3.5, 0, Math.PI * 2); ctx.fill();
-
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.moveTo(-4, 6); ctx.lineTo(-2, 13); ctx.lineTo(0, 6); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(0, 6); ctx.lineTo(2, 13); ctx.lineTo(4, 6); ctx.fill();
-
-    if (bb.tamed) {
-      ctx.fillStyle = '#ffd700';
-      ctx.beginPath();
-      ctx.moveTo(-10, -22); ctx.lineTo(-12, -32); ctx.lineTo(-5, -26);
-      ctx.lineTo(0, -34); ctx.lineTo(5, -26); ctx.lineTo(12, -32); ctx.lineTo(10, -22);
-      ctx.closePath(); ctx.fill();
-    }
-    ctx.restore();
+    drawDetailedBat(ctx, bb.x + bb.w / 2, bb.y + bb.h / 2, 1.45, bb.dir, bb.anim, {
+      crazy: bb.state === 'crazy',
+      tamed: bb.tamed,
+      hurt: bb.hurtT > 0
+    });
 
     if (!bb.tamed) {
+      const cx = bb.x + bb.w / 2;
       ctx.save();
-      const barX = cx - 55, barY = bb.y - 32;
-      ctx.fillStyle = 'rgba(12,8,20,0.82)';
+      const barX = cx - 55, barY = bb.y - 36;
+      ctx.fillStyle = 'rgba(12,8,20,0.86)';
       roundRect(barX, barY - 14, 110, 32, 8);
       ctx.fill();
       ctx.strokeStyle = bb.state === 'crazy' ? '#ff1744' : '#7c59a4';
@@ -3283,41 +3513,7 @@ function drawJerusalem() {
 function drawBeast(b) {
   if (b.defeated) return;
   if (b.isBigBat) {
-    ctx.save();
-    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
-    const flap = Math.sin(time * 18);
-    ctx.translate(cx, cy);
-    ctx.scale(b.dir, 1);
-    ctx.fillStyle = '#261730';
-    ctx.strokeStyle = '#4a2f5c';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(-10, -5);
-    ctx.quadraticCurveTo(-40, -45 - flap * 26, -65, -15 - flap * 18);
-    ctx.quadraticCurveTo(-45, 10, -10, 8);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(10, -5);
-    ctx.quadraticCurveTo(40, -45 - flap * 26, 65, -15 - flap * 18);
-    ctx.quadraticCurveTo(45, 10, 10, 8);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-
-    ctx.fillStyle = '#1e1326';
-    ctx.beginPath(); ctx.ellipse(0, 0, 18, 22, 0, 0, Math.PI * 2); ctx.fill();
-
-    ctx.fillStyle = '#00e676';
-    ctx.beginPath(); ctx.arc(-6, -6, 3.5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(6, -6, 3.5, 0, Math.PI * 2); ctx.fill();
-
-    ctx.fillStyle = '#ffd700';
-    ctx.beginPath();
-    ctx.moveTo(-10, -22); ctx.lineTo(-12, -32); ctx.lineTo(-5, -26);
-    ctx.lineTo(0, -34); ctx.lineTo(5, -26); ctx.lineTo(12, -32); ctx.lineTo(10, -22);
-    ctx.closePath(); ctx.fill();
-    ctx.restore();
+    drawDetailedBat(ctx, b.x + b.w / 2, b.y + b.h / 2, 1.45, b.dir, time, { tamed: true });
     return;
   }
   const im = IMGS[b.cfg.beast];
@@ -4668,6 +4864,10 @@ function drawCoin(c) {
    st = { anim, dir, tongue, blue, squash } */
 function drawCritter(kind, cx, yBottom, s, st) {
   const anim = st.anim || 0, dir = st.dir || 1;
+  if (kind === 'bat') {
+    drawDetailedBat(ctx, cx, yBottom - s * 0.45, (s / 28) * 0.68, dir, anim, { blue: !!st.blue });
+    return;
+  }
   const him = IMGS['crit_' + kind];
   if (him) {
     /* 🎨 高解像宮崎駿風小怪：呼吸伸縮＋行走彈跳＋身體前傾，動態傳神 */
@@ -5692,6 +5892,27 @@ function drawHUD() {
   ctx.globalAlpha = 1;
   ctx.fillStyle = '#ffffff';
   ctx.fillText(`SCORE ${score}`, W - 26, 33);
+
+  // ⏳ 素材背景載入進度條（若尚未 100% 完成時顯示於螢幕頂端中央）
+  if (totalImagesToLoad > 0 && loadedImagesCount < totalImagesToLoad) {
+    const pct = Math.min(99, Math.round((loadedImagesCount / totalImagesToLoad) * 100));
+    const bw = 150, bh = 22, bx = W / 2 - bw / 2, by = 14;
+    ctx.save();
+    ctx.globalAlpha = 0.75;
+    ctx.fillStyle = '#0b1b2b';
+    roundRect(bx, by, bw, bh, 11);
+    ctx.fill();
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = '#3ddc7f';
+    roundRect(bx + 3, by + 3, (bw - 6) * (pct / 100), bh - 6, 8);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+    ctx.fillText(`🌾 素材載入 ${pct}%`, W / 2, by + 11);
+    ctx.restore();
+  }
 }
 
 function drawOverlay() {
@@ -5819,6 +6040,14 @@ function render() {
   ctx.imageSmoothingQuality = 'high';
 
   if (dungeon && dungeon.active) {
+    // 🧹 每一幀先清除全螢幕背景（防止直向手機底部搖桿拖曳產生殘影與重影！）
+    const fullBg = ctx.createLinearGradient(0, 0, 0, H);
+    fullBg.addColorStop(0, '#060a14');
+    fullBg.addColorStop(0.55, '#120f20');
+    fullBg.addColorStop(1, '#1a0c16');
+    ctx.fillStyle = fullBg;
+    ctx.fillRect(0, 0, W, H);
+
     ctx.save();
     ctx.scale(scale, scale);
     ctx.translate(-cam.x, -cam.y);
