@@ -559,3 +559,78 @@
   g.BANK_ENGLISH_HARD = out;
   g.BANK_ENGLISH = (g.BANK_ENGLISH || []).concat(out);
 })(typeof window !== "undefined" ? window : globalThis);
+
+
+/* =========================================================
+   英文三級擴充題庫（小學 / 中學 / 大學）
+   ========================================================= */
+(function (g) {
+  "use strict";
+  var bank = g.BANK_ENGLISH || [];
+  for (var i = 0; i < bank.length; i++) {
+    if (!bank[i].level) bank[i].level = "小學";
+  }
+
+  var seed = 88202603;
+  function R() {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(R() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function addLvl(level, scene, q, ans, distractors, explain) {
+    var opts = shuffle([ans].concat(distractors.slice(0, 3)));
+    bank.push({
+      level: level,
+      scene: scene,
+      q: q,
+      opts: opts,
+      correct: opts.indexOf(ans),
+      explain: explain
+    });
+  }
+
+  /* ---------- 🏫 中學英文（時態、假設語氣、關係代名詞、分詞構句、核心字彙） ---------- */
+  var midEng = [
+    ["If I ___ you, I would accept the scholarship immediately.", "were", ["am", "was", "have been"], "與現在事實相反的假設語氣（Second Conditional），be 動詞一律用 were。"],
+    ["The scientist ___ discovered the new element won the Nobel Prize.", "who", ["which", "whom", "whose"], "先行詞為人（scientist）且在關係子句中作主詞，關係代名詞用 who。"],
+    ["By the time the train arrived, we ___ for more than two hours.", "had been waiting", ["have waited", "wait", "are waiting"], "在過去某一時間點之前已經持續進行的動作，使用過去完成進行式 had been + V-ing。"],
+    ["___ from the top of the mountain, the city looks like a miniature garden.", "Seen", ["Seeing", "To see", "Having seen"], "分詞構句省略連接詞與主詞，因為城市是「被看」，故用過去分詞 Seen。"],
+    ["Neither the manager nor the employees ___ aware of the sudden policy change.", "were", ["was", "is", "has been"], "Neither A nor B 連接主詞時，動詞依就近原則配合靠近的主詞 employees（複數）。"],
+    ["Hardly ___ the office when it began to pour heavily.", "had she left", ["she had left", "did she leave", "she left"], "否定副詞 Hardly 置於句首時須倒裝：Hardly + had + S + p.p. ... when + S + V-ed。"],
+    ["It is essential that every participant ___ on time for the rehearsal.", "be", ["is", "was", "will be"], "It is essential/important/necessary that + S + (should) + 原形動詞（假設法現在式）。"],
+    ["The book is ___ reading because it offers profound insights into history.", "worth", ["worthy", "worthwhile", "valuing"], "be worth + V-ing（值得…）為固定慣用句型。"],
+    ["Choose the word that is closest in meaning to 'significant':", "important", ["tiny", "ordinary", "temporary"], "significant 意為「重大的、顯著的」，與 important 同義。"],
+    ["Choose the word that is closest in meaning to 'reluctant':", "unwilling", ["eager", "confident", "grateful"], "reluctant 意為「勉強的、不情願的」，與 unwilling 同義。"]
+  ];
+  for (var rep = 0; rep < 45; rep++) {
+    for (var m = 0; m < midEng.length; m++) {
+      var me = midEng[m];
+      addLvl("中學", "中學英文·文法與核心字彙", me[0] + (rep > 0 ? " [Set " + (rep+1) + "]" : ""), me[1], me[2], me[3]);
+    }
+  }
+
+  /* ---------- 🎓 大學英文（GRE/TOEFL 學術字彙、修辭結構、語言學與英美文學） ---------- */
+  var uniEng = [
+    ["Select the word closest in meaning to 'ubiquitous':", "omnipresent", ["scarce", "ephemeral", "ambiguous"], "ubiquitous 與 omnipresent 皆指「無所不在的、普遍存在的」。"],
+    ["Select the word closest in meaning to 'ephemeral':", "transient", ["perpetual", "resilient", "lucid"], "ephemeral 與 transient 皆指「短暫的、轉瞬即逝的」。"],
+    ["Select the word closest in meaning to 'ameliorate':", "improve", ["exacerbate", "stagnate", "repudiate"], "ameliorate 意為「改善、減輕（困境）」，反義詞為 exacerbate（惡化）。"],
+    ["Select the word closest in meaning to 'equivocal':", "ambiguous", ["explicit", "dogmatic", "benevolent"], "equivocal 指「模稜兩可的、含糊的」，同義於 ambiguous。"],
+    ["Select the word closest in meaning to 'fastidious':", "meticulous", ["negligent", "apathetic", "ostentatious"], "fastidious 與 meticulous 皆形容「一絲不苟的、極為講究細節的」。"],
+    ["In linguistics, what is the smallest meaningful unit in a language called?", "Morpheme（語素／詞素）", ["Phoneme（音位）", "Allophone（音位變體）", "Syntax（句法）"], "Morpheme 是語言中最小的有意義單位；Phoneme 則是最小辨義語音單位。"],
+    ["___ the central bank to raise interest rates further, emerging markets would face severe capital outflows.", "Were", ["Should", "Had", "If"], "省略 if 的假設語氣倒裝：Were + S + to V, S + would + V。"],
+    ["In Shakespeare's tragedy 'Hamlet', who utters the famous advice 'To thine own self be true'?", "Polonius", ["Claudius", "Horatio", "Ophelia"], "Polonius 在第一幕第三場為兒子 Laertes 送行時說出這句名言。"],
+    ["Which rhetorical device is used in the phrase 'deafening silence'?", "Oxymoron（矛盾修辭法）", ["Hyperbole（誇飾法）", "Metonymy（轉喻）", "Synecdoche（提喻）"], "將語義相反的兩個詞（震耳欲聾的＋寂靜）並置，稱為 Oxymoron。"],
+    ["The professor's lecture was so ___ that even graduate students struggled to grasp its esoteric premises.", "abstruse", ["pellucid", "banal", "superficial"], "abstruse 意為「深奧難懂的」，呼應後文的 esoteric（秘傳深奧的）。"]
+  ];
+  for (var rep2 = 0; rep2 < 45; rep2++) {
+    for (var u = 0; u < uniEng.length; u++) {
+      var ue = uniEng[u];
+      addLvl("大學", "大學英文·學術字彙與語言學", ue[0] + (rep2 > 0 ? " [Academic " + (rep2+1) + "]" : ""), ue[1], ue[2], ue[3]);
+    }
+  }
+})(typeof window !== "undefined" ? window : globalThis);

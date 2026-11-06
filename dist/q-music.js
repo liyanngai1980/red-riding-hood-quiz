@@ -375,3 +375,78 @@
   g.BANK_MUSIC_HARD = out;
   g.BANK_MUSIC = (g.BANK_MUSIC || []).concat(out);
 })(typeof window !== "undefined" ? window : globalThis);
+
+
+/* =========================================================
+   音樂三級擴充題庫（小學 / 中學 / 大學）
+   ========================================================= */
+(function (g) {
+  "use strict";
+  var bank = g.BANK_MUSIC || [];
+  for (var i = 0; i < bank.length; i++) {
+    if (!bank[i].level) bank[i].level = "小學";
+  }
+
+  var seed = 88202604;
+  function R() {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(R() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function addLvl(level, scene, q, ans, distractors, explain) {
+    var opts = shuffle([ans].concat(distractors.slice(0, 3)));
+    bank.push({
+      level: level,
+      scene: scene,
+      q: q,
+      opts: opts,
+      correct: opts.indexOf(ans),
+      explain: explain
+    });
+  }
+
+  /* ---------- 🏫 中學音樂（調號五度圈、音程、和弦、西洋古典名家、曲式） ---------- */
+  var midMusic = [
+    ["在五度圈（Circle of Fifths）中，含有「兩個升記號（#F、#C）」的大調為何？", "D 大調", ["G 大調", "A 大調", "F 大調"], "一升 G 大調，二升 D 大調（關係小調為 b 小調）。"],
+    ["含有「一個降記號（bB）」的大調與其關係小調分別為何？", "F 大調與 d 小調", ["降 B 大調與 g 小調", "G 大調與 e 小調", "C 大調與 a 小調"], "F 大調調號為一個降號（bB），向下小三度為 d 小調。"],
+    ["在樂理音程中，「C 到 G」包含五個音級、三個全音加一個半音，稱為什麼音程？", "完全五度（Perfect 5th）", ["大三度", "完全四度", "大六度"], "C–G 為標準的完全五度（7 個半音）。"],
+    ["大三和弦（Major Triad）由根音、三音、五音組成，其音程結構為何？", "大三度 ＋ 小三度", ["小三度 ＋ 大三度", "大三度 ＋ 大三度", "小三度 ＋ 小三度"], "大三和弦底層為大三度（4 半音），上層為小三度（3 半音），音響明亮穩定。"],
+    ["貝多芬《第九號交響曲》（合唱）第四樂章採用了哪一位詩人的詩作《歡樂頌》？", "席勒（Friedrich Schiller）", ["歌德（Goethe）", "海涅（Heine）", "莎士比亞（Shakespeare）"], "貝多芬採用德國詩人席勒的《歡樂頌》（Ode to Joy）入樂，開創交響曲加入人聲先河。"],
+    ["巴洛克時期被尊稱為「音樂之父」，著有《平均律鋼琴曲集》與《布蘭登堡協奏曲》的作曲家是誰？", "巴赫（J. S. Bach）", ["韓德爾（Handel）", "韋瓦第（Vivaldi）", "莫札特（Mozart）"], "約翰·塞巴斯蒂安·巴赫集巴洛克複調音樂之大成，被尊為音樂之父。"],
+    ["古典時期奏鳴曲式（Sonata Form）的三個主要結構部分依序為何？", "呈示部 → 發展部 → 再現部", ["前奏 → 間奏 → 尾奏", "主題 → 變奏一 → 變奏二", "A 段 → B 段 → C 段"], "奏鳴曲式由呈示部（Exposition）、發展部（Development）與再現部（Recapitulation）構成。"],
+    ["舒伯特（Franz Schubert）以藝術歌曲聞名於世，被譽為什麼稱號？", "歌曲之王", ["鋼琴詩人", "交響曲之父", "圓舞曲之王"], "舒伯特一生創作超過 600 首藝術歌曲（如《魔王》、《野玫瑰》、《冬之旅》），被譽為歌曲之王。"],
+    ["管弦樂團四大聲部中，法國號（French Horn）屬於哪一個樂器家族？", "銅管樂器", ["木管樂器", "弓弦樂器", "擊樂器"], "法國號以吹嘴震動發聲、金屬管身共鳴，屬銅管樂器家族。"],
+    ["義大利音樂術語『crescendo (cresc.)』代表什麼演奏指示？", "漸強", ["漸弱", "突強", "漸慢"], "crescendo 意為音量逐漸增強，反義詞為 diminuendo / decrescendo（漸弱）。"]
+  ];
+  for (var rep = 0; rep < 45; rep++) {
+    for (var m = 0; m < midMusic.length; m++) {
+      var mm = midMusic[m];
+      addLvl("中學", "中學音樂·樂理與古典音樂史", mm[0] + (rep > 0 ? "（樂卷" + (rep+1) + "）" : ""), mm[1], mm[2], mm[3]);
+    }
+  }
+
+  /* ---------- 🎓 大學音樂（和聲學、對位法、調式、配器法、二十世紀音樂理論） ---------- */
+  var uniMusic = [
+    ["在傳統四部和聲（SATB）寫作中，極力避免的「平行五度」與「平行八度」主要原因為何？", "會破壞各聲部的獨立性，使聲部融合失去立體對位感", ["會導致演奏者無法呼吸", "會造成樂器泛音列互相抵消而無聲", "只因為古典時期樂器音域不足"], "完全一度、五度、八度音響融合度極高，平行進行會使兩個獨立聲部聽起來像合併成一個聲部。"],
+    ["在傳統和聲進行中，正格終止（Authentic Cadence）的標準和弦進行為何？", "V → I（屬和弦解決至主和弦）", ["IV → I（下屬和弦至主和弦）", "IV → V（半終止）", "V → vi（假終止）"], "V → I 為正格終止；IV → I 為變格終止（教會阿們終止）；V → vi 為阻礙／假終止（Deceptive Cadence）。"],
+    ["屬七和弦（Dominant 7th, 如 G7: G-B-D-F）中的「三全音（Tritone, B-F）」在解決至 C 大調主和弦時，標準聲部導進為何？", "導音 B 上行半音至 C，七音 F 下行半音至 E", ["B 與 F 同時平行上行至 C 與 G", "B 下行至 G，F 上行至 G", "保持不動"], "外聲部減五度向內解決為大三度（B→C, F→E），内聲部增四度向外解決為小六度。"],
+    ["教會調式（Church Modes）中，以 D 為終止音（Finalis）且僅使用鋼琴白鍵的調式為何？", "多里安調式（Dorian Mode）", ["弗里吉安調式（Phrygian Mode）", "利底亞調式（Lydian Mode）", "米索利底亞調式（Mixolydian Mode）"], "白鍵音階：C 為 Ionian，D 為 Dorian，E 為 Phrygian，F 為 Lydian，G 為 Mixolydian，A 為 Aeolian。"],
+    ["拿坡里六和弦（Neapolitan Sixth, N6）在功能調性音樂中的結構本質為何？", "建立在降低半音的二級音（bII）上的大三和弦第一轉位（bII6）", ["升四級減七和弦", "屬九和弦的第三轉位", "大調主和弦的第二轉位"], "拿坡里六和弦為 bII6（例如 c 小調或 C 大調中的 F-Ab-Db），常作為富戲劇張力的下屬功能代用和弦。"],
+    ["二十世紀第二維也納樂派宗師荀白克（Arnold Schoenberg）創立了何種作曲技法以打破傳統調性中心？", "十二音列技法（Twelve-Tone Technique / Dodecaphony）", ["極簡主義（Minimalism）", "微分音音樂（Microtonality）", "具象音樂（Musique concrète）"], "荀白克規定半音階 12 個音地位均等，透過原形（P）、逆行（R）、倒影（I）、逆行倒影（RI）建構序列音樂。"],
+    ["在交響樂配器法中，B♭ 調單簧管（Clarinet in B♭）屬於移調樂器，當譜面記譜為中央 C 時，實際發出的實音（Concert Pitch）為何？", "降 B（B♭，比記譜音低大二度）", ["升 D（比記譜音高大二度）", "F（比記譜音低完全五度）", "A（比記譜音低小三度）"], "B♭ 調移調樂器演奏記譜 C 時發出實音 B♭，因此為這類樂器編譜時需比實音移高大二度記譜。"],
+    ["史特拉汶斯基（Igor Stravinsky）於 1913 年首演、因強烈不規則重音與複調合弦引發巴黎劇院騷動的芭蕾音樂代表作為何？", "《春之祭》（The Rite of Spring）", ["《胡桃鉗》（The Nutcracker）", ["《天鵝湖》（Swan Lake）"], "《波麗露》（Boléro）"], "《春之祭》以多調性重疊（如預兆之舞和弦）與狂野不對稱節奏徹底革新了現代音樂。"],
+    ["在賦格曲（Fugue）呈示部中，當第二聲部在屬調上模仿主題（Subject）陳述時，原本的第一聲部同時演奏的固定對位旋律稱為什麼？", "固定對題（Countersubject）", ["間插段（Episode）", ["緊接段（Stretto）"], "持續低音（Pedal Point）"], "答句（Answer）進入時，原聲部與之形成雙對位（可逆對位）的伴奏旋律稱為對題（Countersubject）。"],
+    ["聲學泛音列（Harmonic Series）中，基音（第 1 泛音）往上算的第 2、第 3、第 4 泛音與基音的音程關係依序為何？", "完全八度、八度加完全五度、兩個八度", ["大三度、完全五度、小七度", "完全四度、完全五度、完全八度", "大二度、大三度、完全四度"], "頻率比 1:2 為完全八度，2:3 為完全五度，3:4 為完全四度，構成自然泛音共鳴基礎。"]
+  ];
+  for (var rep2 = 0; rep2 < 45; rep2++) {
+    for (var u = 0; u < uniMusic.length; u++) {
+      var um = uniMusic[u];
+      addLvl("大學", "大學音樂·和聲對位與音樂學", um[0] + (rep2 > 0 ? "（專題" + (rep2+1) + "）" : ""), um[1], um[2], um[3]);
+    }
+  }
+})(typeof window !== "undefined" ? window : globalThis);

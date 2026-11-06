@@ -364,3 +364,159 @@
   g.BANK_MATH_HARD = out;
   g.BANK_MATH = (g.BANK_MATH || []).concat(out);
 })(typeof window !== "undefined" ? window : globalThis);
+
+
+/* =========================================================
+   數學三級擴充題庫（小學 / 中學 / 大學）
+   ========================================================= */
+(function (g) {
+  "use strict";
+  var bank = g.BANK_MATH || [];
+  // 將原有國小基礎題標記為「小學」
+  for (var i = 0; i < bank.length; i++) {
+    if (!bank[i].level) bank[i].level = "小學";
+  }
+
+  var seed = 88202601;
+  function R() {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+  function ri(a, b) { return a + Math.floor(R() * (b - a + 1)); }
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(R() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function addLvl(level, scene, q, ans, distractors, explain) {
+    var set = {}; set[String(ans)] = 1;
+    var opts = [String(ans)];
+    for (var i = 0; i < distractors.length && opts.length < 4; i++) {
+      var d = String(distractors[i]);
+      if (!set[d]) { set[d] = 1; opts.push(d); }
+    }
+    var k = 1;
+    while (opts.length < 4) {
+      var fallback = String(ans) + " (" + k + ")";
+      if (!set[fallback]) { set[fallback] = 1; opts.push(fallback); }
+      k++;
+    }
+    var mixed = shuffle(opts.slice());
+    bank.push({
+      level: level,
+      scene: scene,
+      q: q,
+      opts: mixed,
+      correct: mixed.indexOf(String(ans)),
+      explain: explain
+    });
+  }
+
+  /* ---------- 🏫 中學數學（代數、幾何、三角、數列、機率） ---------- */
+  // 1) 一元一次方程式 ax + b = c
+  for (var m1 = 0; m1 < 180; m1++) {
+    var a = ri(2, 12), x = ri(-15, 25), b = ri(-30, 30);
+    if (x === 0) x = 3;
+    var c = a * x + b;
+    var bStr = b >= 0 ? "+ " + b : "- " + Math.abs(b);
+    addLvl("中學", "中學代數·一元一次方程",
+      "解方程式：" + a + "x " + bStr + " = " + c + "，請問 x = ？",
+      "x = " + x, ["x = " + (x + 2), "x = " + (-x), "x = " + (x - 3)],
+      "移項得 " + a + "x = " + (c - b) + "，兩邊同除以 " + a + " 得 x = " + x + "。");
+  }
+
+  // 2) 一元二次方程式 (x - r1)(x - r2) = 0
+  for (var m2 = 0; m2 < 160; m2++) {
+    var r1 = ri(1, 12), r2 = ri(r1 + 1, 16);
+    var B = -(r1 + r2), C = r1 * r2;
+    addLvl("中學", "中學代數·一元二次方程",
+      "求二次方程式 x² - " + (r1 + r2) + "x + " + C + " = 0 的兩根之和與兩根之積？",
+      "和 = " + (r1 + r2) + "，積 = " + C,
+      ["和 = -" + (r1 + r2) + "，積 = " + C, "和 = " + C + "，積 = " + (r1 + r2), "和 = " + (r1 + r2 + 1) + "，積 = " + (C - 1)],
+      "根據韋達定理（根與係數關係），ax²+bx+c=0 兩根之和為 -b/a = " + (r1 + r2) + "，兩根之積為 c/a = " + C + "。");
+  }
+
+  // 3) 畢氏定理（勾股定理）
+  var pyth = [[3,4,5],[5,12,13],[6,8,10],[8,15,17],[7,24,25],[9,12,15],[12,16,20],[15,20,25],[9,40,41],[10,24,26]];
+  for (var m3 = 0; m3 < 120; m3++) {
+    var tri = pyth[m3 % pyth.length];
+    var scale = ri(1, 5);
+    var pA = tri[0] * scale, pB = tri[1] * scale, pC = tri[2] * scale;
+    addLvl("中學", "中學幾何·畢氏定理",
+      "直角三角形的兩股長分別為 " + pA + " 與 " + pB + "，請問斜邊長為何？",
+      pC + "", [(pC + 2) + "", (pA + pB) + "", (pC - 1) + ""],
+      "由畢氏定理 c = √(" + pA + "² + " + pB + "²) = √(" + (pA*pA) + " + " + (pB*pB) + ") = " + pC + "。");
+  }
+
+  // 4) 等差與等比數列、對數與指數、三角函數
+  for (var m4 = 0; m4 < 180; m4++) {
+    var a1 = ri(2, 15), d = ri(3, 9), n = ri(8, 20);
+    var an = a1 + (n - 1) * d;
+    addLvl("中學", "中學數列·等差數列",
+      "等差數列首項 a₁ = " + a1 + "，公差 d = " + d + "，則第 " + n + " 項 a_" + n + " 為何？",
+      an + "", [(an + d) + "", (an - d) + "", (a1 * n) + ""],
+      "a_n = a₁ + (n-1)d = " + a1 + " + " + (n - 1) + "×" + d + " = " + an + "。");
+  }
+
+  var trigQs = [
+    ["在直角座標系中，sin(30°) + cos(60°) 的值為何？", "1", ["√3", "1/2", "√3/2"], "sin(30°) = 1/2，cos(60°) = 1/2，相加等於 1。"],
+    ["tan(45°) + sin²(37°) + cos²(37°) 的值為何？", "2", ["1", "√2", "3/2"], "tan(45°)=1，且由平方關係 sin²θ+cos²θ=1，故 1 + 1 = 2。"],
+    ["已知 log₂(8) + log₃(27) 的值為何？", "6", ["5", "9", "12"], "log₂(2³) = 3，log₃(3³) = 3，3 + 3 = 6。"],
+    ["若直線通過點 (1, 2) 與 (3, 8)，其斜率 m 為何？", "3", ["2", "4", "-3"], "m = (8 - 2) / (3 - 1) = 6 / 2 = 3。"],
+    ["擲兩顆公正骰子，點數和為 7 的機率為何？", "1/6", ["1/12", "1/9", "5/36"], "共有 36 種結果，和為 7 有 (1,6),(2,5),(3,4),(4,3),(5,2),(6,1) 共 6 種，6/36 = 1/6。"]
+  ];
+  for (var i = 0; i < trigQs.length; i++) {
+    addLvl("中學", "中學數學·三角與對數", trigQs[i][0], trigQs[i][1], trigQs[i][2], trigQs[i][3]);
+  }
+
+  /* ---------- 🎓 大學數學（微積分、線性代數、微分方程、機率統計） ---------- */
+  // 1) 多項式微分 d/dx (a x^n + b x^m)
+  for (var u1 = 0; u1 < 200; u1++) {
+    var coeff = ri(2, 9), exp = ri(2, 6), coeff2 = ri(2, 9);
+    var dCoeff = coeff * exp, dExp = exp - 1;
+    var ansStr = dCoeff + "x" + (dExp === 1 ? "" : "^" + dExp) + " + " + coeff2;
+    addLvl("大學", "大學微積分·導函數",
+      "求函數 f(x) = " + coeff + "x^" + exp + " + " + coeff2 + "x 的一階導函數 f'(x) = ？",
+      ansStr,
+      [(coeff * (exp + 1)) + "x^" + exp + " + " + coeff2, coeff + "x^" + dExp + " + " + coeff2, dCoeff + "x^" + exp],
+      "由冪次微分法則 d/dx(x^n) = n·x^(n-1)，得 f'(x) = " + ansStr + "。");
+  }
+
+  // 2) 定積分 ∫_0^a (k x) dx 或 ∫_0^a (3x²) dx
+  for (var u2 = 0; u2 < 160; u2++) {
+    var upper = ri(2, 10), k = ri(1, 6);
+    var val = k * upper * upper * upper;
+    addLvl("大學", "大學微積分·定積分",
+      "計算定積分 ∫₀^" + upper + " (" + (3 * k) + "x²) dx 的值為何？",
+      val + "", [(val / upper) + "", (val + 3 * k) + "", (3 * k * upper * upper) + ""],
+      "反導函數為 " + k + "x³，代入上下限 [0, " + upper + "] 得 " + k + "×" + upper + "³ = " + val + "。");
+  }
+
+  // 3) 線性代數：2x2 矩陣行列式與特徵值跡數
+  for (var u3 = 0; u3 < 180; u3++) {
+    var a11 = ri(1, 9), a12 = ri(1, 7), a21 = ri(1, 7), a22 = ri(1, 9);
+    var det = a11 * a22 - a12 * a21;
+    var tr = a11 + a22;
+    addLvl("大學", "大學線性代數·行列式與跡",
+      "設二階方陣 A = [[" + a11 + ", " + a12 + "], [" + a21 + ", " + a22 + "]]，求其行列式 det(A) 與跡 Tr(A)？",
+      "det(A) = " + det + "，Tr(A) = " + tr,
+      ["det(A) = " + (a11*a22 + a12*a21) + "，Tr(A) = " + tr, "det(A) = " + det + "，Tr(A) = " + (a12 + a21), "det(A) = " + (-det) + "，Tr(A) = " + tr],
+      "det(A) = ad - bc = " + (a11*a22) + " - " + (a12*a21) + " = " + det + "；跡 Tr(A) 為主對角線元素之和 = " + tr + "。");
+  }
+
+  // 4) 經典高數、線代、常微分方程與機率定理
+  var uniMath = [
+    ["求極限 lim_(x→0) [sin(x) / x] 的值為何？", "1", ["0", "∞", "不存在"], "由夾擠定理（Squeeze Theorem）或羅必達法則可得 lim_(x→0) sin(x)/x = 1。"],
+    ["求極限 lim_(n→∞) (1 + 1/n)^n 的值為何？", "e（自然對數底數）", ["1", "∞", "π"], "此為自然常數 e 的標準極限定義，約等於 2.71828。"],
+    ["根據歐拉公式（Euler's Formula），e^(iπ) + 1 的值為何？", "0", ["1", "-1", "2i"], "e^(iθ) = cos(θ) + i·sin(θ)，代入 θ=π 得 e^(iπ) = -1，故 e^(iπ) + 1 = 0。"],
+    ["高斯積分 ∫_(-∞)^(∞) e^(-x²) dx 的值為何？", "√π", ["π", "1", "2√π"], "利用極座標變換計算二重積分可得 ∫_(-∞)^(∞) e^(-x²) dx = √π。"],
+    ["在多元微積分中，連結曲線積分與平面雙重積分的著名定理為何？", "格林定理（Green's Theorem）", ["均值定理", "泰勒定理", "貝氏定理"], "格林定理將平面閉曲線上的線積分轉化為其所圍區域上的雙重積分。"],
+    ["設 A 為 n×n 可逆矩陣，下列哪一個性質恆成立？", "det(A⁻¹) = 1 / det(A)", ["det(A⁻¹) = -det(A)", "Tr(A⁻¹) = 1 / Tr(A)", "rank(A) = 0"], "因為 A·A⁻¹ = I，兩邊取行列式得 det(A)det(A⁻¹) = 1。"],
+    ["常微分方程 y'' + y = 0 的通解為何？", "y = C₁cos(x) + C₂sin(x)", ["y = C₁e^x + C₂e^(-x)", "y = C₁x + C₂", "y = Ce^(x²)"], "特徵方程 r² + 1 = 0 的根為 ±i，故通解為 C₁cos(x) + C₂sin(x)。"],
+    ["在機率論中，大量獨立同分布隨機變數之樣本平均會趨近於常態分布，稱為什麼定理？", "中央極限定理（Central Limit Theorem）", ["大數法則", "馬可夫不等式", "白努利定理"], "中央極限定理說明樣本平均的標準化分布在 n→∞ 時收斂至標準常態分布 N(0,1)。"]
+  ];
+  for (var j = 0; j < uniMath.length; j++) {
+    addLvl("大學", "大學高數·核心定理", uniMath[j][0], uniMath[j][1], uniMath[j][2], uniMath[j][3]);
+  }
+})(typeof window !== "undefined" ? window : globalThis);

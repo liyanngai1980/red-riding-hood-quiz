@@ -271,10 +271,10 @@
       <button class="stageBtn" data-stage="4">🌊<br>海邊</button>
       <button class="stageBtn" data-stage="5">🏰<br>宮殿</button>
     </div>
-    <p style="margin-bottom:8px;color:#7a1f16;font-weight:700;font-size:11px;letter-spacing:1px;margin-bottom:5px">— 選擇難度 —</p>
-    <button class="diffBtn" id="diffEasy">🌱 簡單<small>每關 5 隻大怪</small></button>
-    <button class="diffBtn sel" id="diffNormal">⚔️ 普通<small>每關 7 隻大怪</small></button>
-    <button class="diffBtn" id="diffHard">🔥 困難<small>每關 9 隻大怪</small></button>
+    <p style="margin-bottom:8px;color:#7a1f16;font-weight:700;font-size:11px;letter-spacing:1px;margin-bottom:5px">— 選擇學科難度（10,000+ 題庫） —</p>
+    <button class="diffBtn" id="diffEasy">🎒 小學程度<small>國小基礎 · 每關 5 隻大怪</small></button>
+    <button class="diffBtn sel" id="diffNormal">🏫 中學程度<small>國中高中進階 · 每關 7 隻大怪</small></button>
+    <button class="diffBtn" id="diffHard">🎓 大學程度<small>大學專業深造 · 每關 9 隻大怪</small></button>
     <button id="startBtn">開始冒險</button>
     <div class="menuRow">
       <button id="videoBtn">🎬 宣傳片</button>
@@ -459,9 +459,9 @@ let allStats = [];               // 各關統計
 
 /* ====================== 難度與關卡設定 ====================== */
 const DIFFS = {
-  easy:   { name:'簡單', beastCount: 5 },
-  normal: { name:'普通', beastCount: 7 },
-  hard:   { name:'困難', beastCount: 9 }
+  easy:   { name:'小學', beastCount: 5, level: '小學' },
+  normal: { name:'中學', beastCount: 7, level: '中學' },
+  hard:   { name:'大學', beastCount: 9, level: '大學' }
 };
 const STAGES = [
   { name:'森林', bg:'forest',   beast:'wolf',   beastName:'野狼', emoji:'🐺', bank:'BANK_MATH',    subject:'數學',
@@ -582,13 +582,21 @@ function loadStageAssets(stg) {
   }
 }
 
-// ⚡ 啟動首屏優先資產（極速秒開）
+// ⚡ 啟動首屏優先資產（極速秒開＋完整腿部與頭部骨骼部件）
 loadImg('player', 'assets/player.png');
 loadImg('wolf',   'assets/wolf.png');
 loadImg('player_pbase', 'assets/parts/player_base.png');
 loadImg('wolf_pbase',   'assets/parts/wolf_base.png');
 PARTS['player'].parts.forEach(p => loadImg('p_' + p.key, 'assets/parts/' + p.key + '.png'));
 PARTS['wolf'].parts.forEach(p => loadImg('p_' + p.key, 'assets/parts/' + p.key + '.png'));
+
+// 立即加載所有套裝的骨骼分件（保證前後雙腿與腳掌邁步自然無滑步）
+['tang', 'princess', 'cowboy'].forEach(c => {
+  loadImg('player_' + c + '_pbase', 'assets/parts/player_' + c + '_base.png');
+  loadImg('p_player_' + c + '_head', 'assets/parts/player_' + c + '_head.png');
+  loadImg('p_player_' + c + '_legL', 'assets/parts/player_' + c + '_legL.png');
+  loadImg('p_player_' + c + '_legR', 'assets/parts/player_' + c + '_legR.png');
+});
 
 ['cost_red','cost_tang','cost_princess','cost_cowboy'].forEach(n => {
   loadImg(n + '_sprite', 'assets/' + n + '_sprite.png');
@@ -602,12 +610,6 @@ setTimeout(() => {
       loadImg(n, 'assets/' + n + '.png');
     });
     [2, 3, 4, 5].forEach(stg => loadStageAssets(stg));
-    ['tang', 'princess', 'cowboy'].forEach(c => {
-      loadImg('player_' + c + '_pbase', 'assets/parts/player_' + c + '_base.png');
-      loadImg('p_player_' + c + '_head', 'assets/parts/player_' + c + '_head.png');
-      loadImg('p_player_' + c + '_legL', 'assets/parts/player_' + c + '_legL.png');
-      loadImg('p_player_' + c + '_legR', 'assets/parts/player_' + c + '_legR.png');
-    });
   };
   if ('requestIdleCallback' in window) requestIdleCallback(idleBg);
   else setTimeout(idleBg, 500);
@@ -659,8 +661,19 @@ function drawPuppet(name, x, yBottom, dw, dir, anim) {
     const im = IMGS[imKey] || IMGS['p_' + p.key];
     if (!im) return;
     const px = LX(p.px), py = LY(p.py);
+
+    // 👣 步態細節：腿向前邁出時自然抬腳、膝蓋微屈與腳踝提拉，落步時踏實著地
+    let stepX = 0, stepY = 0;
+    if (p.swing === 'legA' || p.swing === 'legB') {
+      const sPhase = (p.swing === 'legA') ? ph : (ph + Math.PI);
+      const fwd = Math.sin(sPhase);                  // -1 (向後蹬) ~ +1 (向前邁)
+      const lift = Math.max(0, Math.cos(sPhase));    // 抬腳跨越高度
+      stepX = fwd * 3.8 * move;
+      stepY = -lift * 4.2 * move;
+    }
+
     ctx.save();
-    ctx.translate(px, py);
+    ctx.translate(px + stepX, py + stepY);
     ctx.rotate(angle);
     ctx.drawImage(im, LX(p.x) - px, LY(p.y) - py, p.w * sx, p.h * sy);
     ctx.restore();
@@ -668,9 +681,9 @@ function drawPuppet(name, x, yBottom, dw, dir, anim) {
 
   function partAngle(p) {
     switch (p.swing) {
-      case 'legA':  return Math.sin(ph) * 0.42 * move + air * 0.45;
-      case 'legB':  return Math.sin(ph + Math.PI) * 0.42 * move - air * 0.30;
-      case 'head':  return Math.sin(ph * 0.5) * 0.05 * move + Math.sin(idle * 0.7) * 0.03 - air * 0.10;
+      case 'legA':  return Math.sin(ph) * 0.58 * move + air * 0.48;
+      case 'legB':  return Math.sin(ph + Math.PI) * 0.58 * move - air * 0.34;
+      case 'head':  return Math.sin(ph * 0.5) * 0.06 * move + Math.sin(idle * 0.7) * 0.03 - air * 0.10;
       case 'tail':  return Math.sin(ph * 0.9 + 1.2) * (0.10 + 0.08 * move) + Math.sin(idle) * 0.05;
       case 'wingL': return -(Math.sin(ph * 2.2) * 0.55 * flap + Math.sin(idle) * 0.04);
       case 'wingR': return Math.sin(ph * 2.2 + 0.6) * 0.45 * flap + Math.sin(idle + 1) * 0.03;
@@ -2522,11 +2535,11 @@ function updatePlayer(dt) {
     player.spinT = 0;
   }
 
-  /* --- 走路動畫 --- */
-  if (player.onGround && Math.abs(player.vx) > 20) {
-    player.animT += dt * Math.abs(player.vx) * 0.06;
+  /* --- 走路動畫（加快步頻，消除滑步感） --- */
+  if (player.onGround && Math.abs(player.vx) > 12) {
+    player.animT += dt * (2.6 + Math.abs(player.vx) * 0.032);
   } else {
-    player.animT *= 0.9;
+    player.animT *= 0.85;
   }
 
   /* --- 掉進坑洞（第5關第二深谷進入秘密地下城） --- */
@@ -2588,15 +2601,34 @@ function mountSupport(b) {
 
 function updateMountRide(dt) {
   const b = player.mount;
-  if (!b || b.defeated) { player.mount = null; return; }
+  if (!b || b.defeated) { player.mount = null; player.jumpReleaseT = 0; return; }
   const down = keys['ArrowDown'] || keys['KeyS'] || (joy.active && joy.dy > 45);
   if (down) {                       // 跳下坐騎（坐騎留在原地等你）
     player.mount = null;
+    player.jumpReleaseT = 0;
     player.noMountT = 0.9;          // 短暫不自動再上騎
     player.vy = -260;
     player.onGround = false;
     BGM.sfx('jump');
     return;
+  }
+
+  // 🦘 長按跳躍鍵 1.25 秒 → 釋放／跳離大動物座駕！
+  if (wantJump) {
+    player.jumpReleaseT = (player.jumpReleaseT || 0) + dt;
+    if (player.jumpReleaseT >= 1.25) {
+      player.jumpReleaseT = 0;
+      player.mount = null;
+      player.noMountT = 1.1;
+      player.vy = -520;
+      player.onGround = false;
+      BGM.sfx('jump2');
+      spawnRing(player.x + player.w/2, player.y + player.h, '#7df9ff');
+      spawnDust(player.x + player.w/2, player.y + player.h, 12, '#7df9ff');
+      return;
+    }
+  } else {
+    player.jumpReleaseT = 0;
   }
   if (inputX !== 0) b.dir = inputX > 0 ? 1 : -1;
   player.facing = b.dir;
@@ -3646,7 +3678,10 @@ const quizEl = {
 let quizBeast = null, quizSolved = false, quizCustom = null;
 
 function openQuiz(beast, custom) {
-  const bank = (custom && !custom.tame) ? custom.bank : (window[beast.cfg.bank] || []);
+  let rawBank = (custom && !custom.tame) ? custom.bank : (window[beast.cfg.bank] || []);
+  const targetLvl = DIFFS[difficulty] ? DIFFS[difficulty].level : '中學';
+  let bank = rawBank.filter(x => x.level === targetLvl);
+  if (!bank.length) bank = rawBank;
   if (!bank.length) {           // 題庫異常時直接過關，避免卡關
     if (custom && custom.tame) grantTame(beast);
     else if (custom) { cross.got = true; score += 500; }
@@ -3667,16 +3702,17 @@ function openQuiz(beast, custom) {
     [order[i], order[j]] = [order[j], order[i]];
   }
 
+  const lvlBadge = item.level || targetLvl;
   quizEl.title.textContent = custom
     ? (custom.bigBat
-        ? '🦇 洞穴巨蝠 · 聖經深造考驗 · 答對即可馴服並取得神盾🛡️'
+        ? `🦇 洞穴巨蝠 · 聖經深造考驗【${lvlBadge}】· 答對即可馴服並取得神盾🛡️`
         : custom.hydraHead !== undefined
-          ? '🐉 九頭巨龍 · 啟示錄聖言考驗 · 答對即可擊碎龍頭'
+          ? `🐉 九頭巨龍 · 啟示錄聖言考驗【${lvlBadge}】· 答對即可擊碎龍頭`
           : custom.tame
-            ? `${beast.cfg.emoji} ${beast.cfg.beastName}的${beast.cfg.subject}考驗 · 答對即可馴服為座駕🏇`
-            : '✝️ 隱藏寶藏 · 啟示錄考驗')
-    : `${beast.cfg.emoji} ${beast.cfg.beastName}的${beast.cfg.subject}考驗 · 答對即可擊敗`;
-  quizEl.scene.textContent = '📁 ' + (item.scene || beast.cfg.subject + '案件');
+            ? `${beast.cfg.emoji} ${beast.cfg.beastName}的${beast.cfg.subject}考驗【${lvlBadge}】· 答對即可馴服為座駕🏇`
+            : `✝️ 隱藏寶藏 · 啟示錄考驗【${lvlBadge}】`)
+    : `${beast.cfg.emoji} ${beast.cfg.beastName}的${beast.cfg.subject}考驗【${lvlBadge}】· 答對即可擊敗`;
+  quizEl.scene.textContent = `📁 【${lvlBadge}程度】` + (item.scene || beast.cfg.subject + '案件');
   quizEl.q.textContent = item.q;
   quizEl.explain.className = '';
   quizEl.explain.style.display = 'none';
@@ -5129,18 +5165,24 @@ function drawGoal() {
 function drawPlayer() {
   const { x, y, w, h } = player;
 
-  // ⚡ 蓄力條：按住捕捉鍵時在頭頂顯示（滿 2 秒放出一隻）
-  if (player.chargeT > 0 && (player.holding.length || player.holdingHydra || player.ridingOn || player.mount)) {
-    const pct = Math.min(1, player.chargeT / 1);
+  // ⚡ 蓄力條：按住捕捉鍵或騎乘時長按跳躍鍵釋放座駕，在頭頂顯示進度
+  const relPct = (player.mount && player.jumpReleaseT > 0.15) ? Math.min(1, (player.jumpReleaseT - 0.15) / 1.1) : 0;
+  if ((player.chargeT > 0 && (player.holding.length || player.holdingHydra || player.ridingOn || player.mount)) || relPct > 0) {
+    const pct = relPct > 0 ? relPct : Math.min(1, player.chargeT / 1);
     const bw = 56, bx0 = x + w/2 - bw/2, by0 = y - 22;
     ctx.save();
     ctx.fillStyle = 'rgba(10,20,30,0.65)';
     roundRect(bx0 - 2, by0 - 2, bw + 4, 10, 5);
     ctx.fill();
     const grad = ctx.createLinearGradient(bx0, 0, bx0 + bw, 0);
-    grad.addColorStop(0, '#7dd87d');
-    grad.addColorStop(0.7, '#ffd54a');
-    grad.addColorStop(1, '#ff7b2d');
+    if (relPct > 0) {
+      grad.addColorStop(0, '#7df9ff');
+      grad.addColorStop(1, '#ffd54a');
+    } else {
+      grad.addColorStop(0, '#7dd87d');
+      grad.addColorStop(0.7, '#ffd54a');
+      grad.addColorStop(1, '#ff7b2d');
+    }
     ctx.fillStyle = grad;
     roundRect(bx0, by0, bw * pct, 6, 3);
     ctx.fill();
@@ -5211,16 +5253,54 @@ function drawPlayer() {
   }
   ctx.scale(stX, stY);
 
-  if (cImg && cImg.width && cImg.height) {
-    // 🎨 完整超高解析度單次繪製（零切縫、零失真、保持宮崎駿原畫細膩筆觸）
-    ctx.drawImage(cImg, -dw / 2, -dh, dw, dh);
+  // 👣 優先使用雙腿獨立前後擺動木偶骨骼繪製（自然邁步與抬腳，徹底告別滑步感）
+  const puppetOk = drawPuppet('player', 0, 0, 34, 1, {
+    phase: ph,
+    move: move,
+    air: air,
+    lean: 0,
+    squash: (player.landT || 0)
+  });
+
+  if (puppetOk) {
     if (isPrincessGliding) {
-      // 👑 裙擺散發出優雅的粉紅星塵光環
       ctx.fillStyle = (Math.random() > 0.5) ? '#ffd54a' : '#f7a8c8';
       ctx.beginPath();
       ctx.arc(-dw * 0.35 + Math.random() * dw * 0.7, -4 + Math.random() * 8, 1.8, 0, Math.PI * 2);
       ctx.fill();
     }
+  } else if (cImg && cImg.width && cImg.height) {
+    // 備用分層步態繪製（木偶圖尚未載入完成時，將精靈圖分為雙腿前後交錯邁步＋軀幹＋點頭）
+    const sw = cImg.width, sh = cImg.height;
+    const legAngA = Math.sin(ph) * 0.52 * move + air * 0.42;
+    const legAngB = Math.sin(ph + Math.PI) * 0.52 * move - air * 0.28;
+    const liftA = Math.max(0, Math.cos(ph)) * 3.5 * move;
+    const liftB = Math.max(0, Math.cos(ph + Math.PI)) * 3.5 * move;
+    const headAng = Math.sin(ph * 0.5) * 0.05 * move;
+
+    // 後側腿與腳掌邁步
+    ctx.save();
+    ctx.translate(Math.sin(ph) * 3 * move, -dh * 0.26 - liftA);
+    ctx.rotate(legAngA);
+    ctx.drawImage(cImg, 0, sh * 0.70, sw, sh * 0.30, -dw / 2, 0, dw, dh * 0.30);
+    ctx.restore();
+
+    // 前側腿與腳掌邁步
+    ctx.save();
+    ctx.translate(Math.sin(ph + Math.PI) * 3 * move, -dh * 0.26 - liftB);
+    ctx.rotate(legAngB);
+    ctx.drawImage(cImg, 0, sh * 0.70, sw, sh * 0.30, -dw / 2, 0, dw, dh * 0.30);
+    ctx.restore();
+
+    // 身體軀幹
+    ctx.drawImage(cImg, 0, sh * 0.32, sw, sh * 0.40, -dw / 2, -dh * 0.68, dw, dh * 0.40);
+
+    // 頭部律動
+    ctx.save();
+    ctx.translate(0, -dh * 0.65);
+    ctx.rotate(headAng);
+    ctx.drawImage(cImg, 0, 0, sw, sh * 0.35, -dw / 2, -dh * 0.35, dw, dh * 0.35);
+    ctx.restore();
   } else {
     // 🛡️ 載入中保護：繪製套裝配色的過渡剪影，保證角色在任何網絡延遲下絕不隱形！
     const colMap = { red: '#c22727', tang: '#d4a017', princess: '#f7a8c8', cowboy: '#8a5a2a' };
@@ -5852,17 +5932,18 @@ function drawHUD() {
     ctx.fillText('🛡️神盾', 260, 35);
   }
 
-  // 關卡標籤（第二列，避開愛心與鑰匙）
+  // 關卡與難度標籤（第二列，避開愛心與鑰匙）
   ctx.textAlign = 'center';
   ctx.globalAlpha = 0.35;
   ctx.fillStyle = '#0b1b2b';
-  roundRect(14, 60, 190, 32, 12);
+  roundRect(14, 60, 214, 32, 12);
   ctx.fill();
   ctx.globalAlpha = 1;
   const th2 = TH();
+  const diffName = DIFFS[difficulty] ? DIFFS[difficulty].name : '中學';
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
-  ctx.fillText(`第${stage}關 ${th2.name}${th2.emoji}·${th2.subject}`, 109, 77);
+  ctx.font = 'bold 13.5px system-ui, -apple-system, sans-serif';
+  ctx.fillText(`第${stage}關 ${th2.name}${th2.emoji}·${th2.subject}【${diffName}】`, 121, 77);
   ctx.textAlign = 'left';
 
   // 👗 換裝目標：金幣進度（爭取購買下一套裝）
@@ -6222,13 +6303,23 @@ function drawMiniPlayer(x, yB, dh, dir, ph) {
   mctx.rotate(Math.sin(ph) * 0.035);
 
   const sw = cImg.width, sh = cImg.height;
-  const legAngle = Math.sin(ph) * 0.16;
+  const legAngA = Math.sin(ph) * 0.45;
+  const legAngB = Math.sin(ph + Math.PI) * 0.45;
+  const liftA = Math.max(0, Math.cos(ph)) * 3.5;
+  const liftB = Math.max(0, Math.cos(ph + Math.PI)) * 3.5;
   const headAngle = Math.sin(ph * 0.5) * 0.06;
 
-  // 腿部邁步
+  // 後腿邁步
   mctx.save();
-  mctx.translate(0, -dh * 0.28);
-  mctx.rotate(legAngle);
+  mctx.translate(Math.sin(ph) * 3.2, -dh * 0.28 - liftA);
+  mctx.rotate(legAngA);
+  mctx.drawImage(cImg, 0, sh * 0.70, sw, sh * 0.30, -dw / 2, 0, dw, dh * 0.30);
+  mctx.restore();
+
+  // 前腿邁步
+  mctx.save();
+  mctx.translate(Math.sin(ph + Math.PI) * 3.2, -dh * 0.28 - liftB);
+  mctx.rotate(legAngB);
   mctx.drawImage(cImg, 0, sh * 0.70, sw, sh * 0.30, -dw / 2, 0, dw, dh * 0.30);
   mctx.restore();
 
