@@ -393,11 +393,11 @@ function resize() {
 function computeScale() {
   const isPortrait = H > W;
   if (isPortrait) {
-    // 📱 iOS 直向模式：自適應以 820px 寬度為視野基準，保證視野開闊清晰，平台與怪物盡收眼底
-    scale = Math.max(W / 820, 0.46);
+    // 📱 直屏模式：讓人物、怪物與平台實體大小與橫屏完全一致（以 540px 為基準，自動按螢幕寬度縮放）
+    scale = Math.max(W / 540, 0.72);
   } else {
-    // 💻 Desktop macOS / 橫向全螢幕：以標準 1280x720 橫向寬屏為基準
-    scale = Math.max(W / 1280, H / 720, 0.5);
+    // 💻 橫屏模式：以標準寬屏為基準，確保直橫屏人物視覺比例統一
+    scale = Math.max(W / 1280, H / 720, 0.65);
   }
 }
 function getUIButtons() {
@@ -4793,8 +4793,9 @@ function drawBackgroundWorld() {
 function drawPlatform(p) {
   const th = TH();
   if (p.kind === 'ground') {
+    const extH = Math.max(p.h, 900);
     ctx.fillStyle = th.dirt;
-    ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.fillRect(p.x, p.y, p.w, extH);
     ctx.fillStyle = 'rgba(0,0,0,0.08)';
     for (let i = 0; i < p.w; i += 44) {
       ctx.fillRect(p.x + i + 8, p.y + 34, 22, 12);
@@ -6011,23 +6012,25 @@ function drawOverlay() {
   ctx.globalAlpha = 1;
 }
 
-/* ---------- 三層卷軸視差背景 ---------- */
+/* ---------- 三層卷軸視差背景（鏡像無縫平鋪＋次像素對齊消除接縫） ---------- */
 function drawParallax(img, factor, targetH, bottomScreenY, mirror) {
-  if (!img) return false;
-  const dw = img.width / img.height * targetH;
-  let off = -(cam.x * scale * factor) % dw;
-  if (off > 0) off -= dw;
-  const dy = bottomScreenY - targetH;
-  let i = Math.floor((cam.x * scale * factor) / dw);
-  for (let x = off; x < W; x += dw, i++) {
-    if (mirror && (i % 2)) {
+  if (!img || !img.width || !img.height) return false;
+  const dw = Math.ceil(img.width / img.height * targetH);
+  const step = Math.max(1, dw - 2);               // 重疊 2px 徹底消除雙線性濾鏡接縫與斷層
+  let off = -((cam.x * scale * factor) % step);
+  if (off > 0) off -= step;
+  const dy = Math.round(bottomScreenY - targetH);
+  let i = Math.floor((cam.x * scale * factor) / step);
+  for (let x = off; x < W + step; x += step, i++) {
+    const rx = Math.round(x);
+    if (mirror && (Math.abs(i) % 2 === 1)) {
       ctx.save();
-      ctx.translate(x + dw / 2, 0);
+      ctx.translate(rx + dw / 2, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(img, -dw / 2, dy, dw, targetH);
       ctx.restore();
     } else {
-      ctx.drawImage(img, x, dy, dw, targetH);
+      ctx.drawImage(img, rx, dy, dw, targetH);
     }
   }
   return true;
@@ -6075,11 +6078,11 @@ function render() {
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
 
-  // 遠景：整幅細緻風景（視差 0.12），地面線對齊實際地面
+  // 遠景：整幅細緻風景（視差 0.12），開啟鏡像無縫平鋪（true），消除橫屏左右拼接斷層！
   const groundSY = (GROUND_Y - cam.y) * scale;
   const farImg = IMGS[th.bg + '_far'];
   const hasFar = farImg
-    ? drawParallax(farImg, 0.12, Math.max(H * 1.02, groundSY + H * 0.30), groundSY + H * 0.30, false)
+    ? drawParallax(farImg, 0.12, Math.max(H * 1.02, groundSY + H * 0.30), groundSY + H * 0.30, true)
     : false;
   if (!hasFar) drawClouds();
 
